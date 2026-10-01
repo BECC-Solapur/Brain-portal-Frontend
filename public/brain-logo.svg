@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="304" height="375" viewBox="0 0 304 375" role="img" aria-labelledby="title desc">
+  <title id="title">BRAIN symbol</title>
+  <desc id="desc">A navy geometric human figure beneath a framed red rounded rectangle.</desc>
+  <defs>
+    <linearGradient id="navy" x1="0" y1="0" x2="0.86" y2="1">
+      <stop offset="0" stop-color="#06266b"/>
+      <stop offset="0.58" stop-color="#082b72"/>
+      <stop offset="1" stop-color="#06215e"/>
+    </linearGradient>
+    <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e5141d"/>
+      <stop offset="1" stop-color="#df0d15"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Screen -->
+  <path fill="url(#navy)" fill-rule="evenodd" d="M99 65h120v73H99V65Zm7 7v59h106V72H106Z"/>
+  <rect x="118" y="81" width="83" height="45" rx="22.5" fill="url(#red)"/>
+
+  <!-- Horizontal header bar -->
+  <path fill="url(#navy)" d="M62 143h195v28H62z"/>
+
+  <!-- Geometric figure -->
+  <path fill="url(#navy)" d="M62 179h59l17 28-34 52v-37L62 179Z"/>
+  <path fill="url(#navy)" d="M257 179h-57l-17 28 34 52v-37l40-43Z"/>
+  <path fill="url(#navy)" d="m160 186 80 145 31 19h-70l10-15-51-93-51 93 10 15H52l29-19 79-145Z"/>
+</svg>
