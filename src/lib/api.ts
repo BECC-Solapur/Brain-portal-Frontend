@@ -114,7 +114,11 @@ export async function apiCall<T = unknown>(path: string, opts: FetchOptions = {}
       method,
       headers: initHeaders,
       credentials: 'same-origin',
-      body: body === undefined ? undefined : hasJson ? JSON.stringify(body) : (body as any),
+      body: body === undefined
+        ? undefined
+        : hasJson
+          ? (typeof body === 'string' ? body : JSON.stringify(body))
+          : (body as any),
     });
   } catch (e: any) {
     throw new ClientApiError('INTERNAL_SERVER_ERROR', e?.message || 'Network error', 0);

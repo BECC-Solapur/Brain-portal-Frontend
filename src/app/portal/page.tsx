@@ -718,6 +718,8 @@ function SuperAdminView() {
         />
       </div>
 
+      <BrainAdminCreationPanel />
+
       {successMsg && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-[8px] flex items-center justify-between">
           <span className="font-medium">{successMsg}</span>
@@ -3231,39 +3233,11 @@ function ConclusionsView({ role }: { role: Role }) {
   );
 }
 
-function AccessControlView() {
+function BrainAdminCreationPanel() {
   const [adminForm, setAdminForm] = useState({ name: "", email: "", password: "" });
   const [creatingAdmin, setCreatingAdmin] = useState(false);
   const [notice, setNotice] = useState("");
   const [errorNotice, setErrorNotice] = useState("");
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const loadUsers = () => {
-    setLoading(true);
-    apiCall<any[]>("/api/v1/admin/users")
-      .then((data) => {
-        setUsers(Array.isArray(data) ? data : []);
-      })
-      .catch((err) => {
-        console.error("Failed to load users", err);
-      })
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const toggleFreeze = async (userId: string, userName: string, isFrozen: boolean) => {
-    try {
-      await apiCall(`/api/v1/admin/users/${userId}/freeze`, { method: "PATCH" });
-      setNotice(`User access ${isFrozen ? "restored" : "frozen"} for ${userName}.`);
-      loadUsers();
-    } catch (err: any) {
-      setErrorNotice(err.message || "Failed to update user status");
-    }
-  };
 
   const createBrainAdmin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -3274,26 +3248,14 @@ function AccessControlView() {
     try {
       const created = await apiCall<{ email: string }>("/api/v1/admin/users", {
         method: "POST",
-        body: JSON.stringify({ ...adminForm, role: "Brain Admin" }),
+        body: { ...adminForm, role: "Brain Admin" },
       });
       setNotice(`Brain Admin workspace access created for ${created.email}. They can sign in with the password you provided.`);
       setAdminForm({ name: "", email: "", password: "" });
-      loadUsers();
     } catch (err: any) {
       setErrorNotice(err.message || "Failed to create Brain Admin credentials");
     } finally {
       setCreatingAdmin(false);
-    }
-  };
-
-  const removeUser = async (userId: string, userName: string) => {
-    if (!window.confirm(`Are you sure you want to remove user access for "${userName}"?`)) return;
-    try {
-      await apiCall(`/api/v1/admin/users/${userId}`, { method: "DELETE" });
-      setNotice(`User access removed for ${userName}.`);
-      loadUsers();
-    } catch (err: any) {
-      setErrorNotice(err.message || "Failed to remove user");
     }
   };
 
@@ -3335,6 +3297,68 @@ function AccessControlView() {
           </Button>
         </form>
       </SectionPanel>
+    </div>
+  );
+}
+
+function AccessControlView() {
+  const [notice, setNotice] = useState("");
+  const [errorNotice, setErrorNotice] = useState("");
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadUsers = () => {
+    setLoading(true);
+    apiCall<any[]>("/api/v1/admin/users")
+      .then((data) => {
+        setUsers(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error("Failed to load users", err);
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const toggleFreeze = async (userId: string, userName: string, isFrozen: boolean) => {
+    try {
+      await apiCall(`/api/v1/admin/users/${userId}/freeze`, { method: "PATCH" });
+      setNotice(`User access ${isFrozen ? "restored" : "frozen"} for ${userName}.`);
+      loadUsers();
+    } catch (err: any) {
+      setErrorNotice(err.message || "Failed to update user status");
+    }
+  };
+
+  const removeUser = async (userId: string, userName: string) => {
+    if (!window.confirm(`Are you sure you want to remove user access for "${userName}"?`)) return;
+    try {
+      await apiCall(`/api/v1/admin/users/${userId}`, { method: "DELETE" });
+      setNotice(`User access removed for ${userName}.`);
+      loadUsers();
+    } catch (err: any) {
+      setErrorNotice(err.message || "Failed to remove user");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {notice && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-[8px] flex items-center justify-between">
+          <span className="font-medium">{notice}</span>
+          <button onClick={() => setNotice("")} className="font-bold text-emerald-900 hover:opacity-75">Ã—</button>
+        </div>
+      )}
+
+      {errorNotice && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-800 text-xs rounded-[8px] flex items-center justify-between">
+          <span className="font-medium">{errorNotice}</span>
+          <button onClick={() => setErrorNotice("")} className="font-bold text-red-900 hover:opacity-75">Ã—</button>
+        </div>
+      )}
 
       <SectionPanel title="User Access">
         {loading ? (
