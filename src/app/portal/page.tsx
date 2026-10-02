@@ -572,7 +572,7 @@ export default function PortalPage() {
 
           {activeSection === "conclusions" && <ConclusionsView role={role} />}
 
-          {activeSection === "access" && <AccessControlView />}
+          {activeSection === "access" && role === "SuperAdmin" && <AccessControlView />}
 
           {activeSection === "audit" && <AuditLogView />}
 
@@ -3232,6 +3232,8 @@ function ConclusionsView({ role }: { role: Role }) {
 }
 
 function AccessControlView() {
+  const [adminForm, setAdminForm] = useState({ name: "", email: "", password: "" });
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
   const [notice, setNotice] = useState("");
   const [errorNotice, setErrorNotice] = useState("");
   const [users, setUsers] = useState<any[]>([]);
@@ -3263,6 +3265,27 @@ function AccessControlView() {
     }
   };
 
+  const createBrainAdmin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (creatingAdmin) return;
+    setCreatingAdmin(true);
+    setNotice("");
+    setErrorNotice("");
+    try {
+      const created = await apiCall<{ email: string }>("/api/v1/admin/users", {
+        method: "POST",
+        body: JSON.stringify({ ...adminForm, role: "Brain Admin" }),
+      });
+      setNotice(`Brain Admin workspace access created for ${created.email}. They can sign in with the password you provided.`);
+      setAdminForm({ name: "", email: "", password: "" });
+      loadUsers();
+    } catch (err: any) {
+      setErrorNotice(err.message || "Failed to create Brain Admin credentials");
+    } finally {
+      setCreatingAdmin(false);
+    }
+  };
+
   const removeUser = async (userId: string, userName: string) => {
     if (!window.confirm(`Are you sure you want to remove user access for "${userName}"?`)) return;
     try {
@@ -3290,6 +3313,28 @@ function AccessControlView() {
           <button onClick={() => setErrorNotice("")} className="font-bold text-red-900 hover:opacity-75">×</button>
         </div>
       )}
+
+      <SectionPanel title="Create Brain Admin Workspace" subtitle="Create login credentials for an administrator in your organization.">
+        <form onSubmit={createBrainAdmin} className="space-y-4 text-xs">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <label className="space-y-1 font-medium">
+              <span>Full name</span>
+              <input required value={adminForm.name} onChange={(event) => setAdminForm({ ...adminForm, name: event.target.value })} className="w-full rounded-[6px] border border-[#d8d5e6] p-3" autoComplete="name" />
+            </label>
+            <label className="space-y-1 font-medium">
+              <span>Login email</span>
+              <input required type="email" value={adminForm.email} onChange={(event) => setAdminForm({ ...adminForm, email: event.target.value })} className="w-full rounded-[6px] border border-[#d8d5e6] p-3" autoComplete="off" />
+            </label>
+            <label className="space-y-1 font-medium">
+              <span>Password</span>
+              <input required type="password" minLength={8} maxLength={72} value={adminForm.password} onChange={(event) => setAdminForm({ ...adminForm, password: event.target.value })} className="w-full rounded-[6px] border border-[#d8d5e6] p-3" autoComplete="new-password" />
+            </label>
+          </div>
+          <Button type="submit" size="sm" variant="primary" disabled={creatingAdmin}>
+            {creatingAdmin ? "Creating..." : "Create Brain Admin Credentials"}
+          </Button>
+        </form>
+      </SectionPanel>
 
       <SectionPanel title="User Access">
         {loading ? (
