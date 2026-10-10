@@ -60,6 +60,7 @@ export default function Button({
 }: ButtonProps) {
   return (
     <button
+      type="button"
       disabled={disabled || loading}
       className={`
         inline-flex items-center justify-center

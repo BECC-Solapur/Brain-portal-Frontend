@@ -356,6 +356,7 @@ export interface CounsellingSessionItem {
 // ===================== FOLLOW-UPS =====================
 export interface FollowUpItem {
   id: UUID;
+  sourceType?: 'followup' | 'appointment';
   inquiryId: UUID;
   inquiryNumber: string;
   inquiryStatus: string;

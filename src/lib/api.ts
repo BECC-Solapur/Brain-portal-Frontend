@@ -114,6 +114,7 @@ export async function apiCall<T = unknown>(path: string, opts: FetchOptions = {}
       method,
       headers: initHeaders,
       credentials: 'same-origin',
+      cache: 'no-store',
       body: body === undefined
         ? undefined
         : hasJson

@@ -292,8 +292,8 @@ export function OfficialInquiryForm({ embedded = false }: { embedded?: boolean }
 
   return (
     <div className={`${embedded ? "" : "min-h-screen"} flex flex-col bg-[#e9eaf1] text-[#171717]`}>
-      <div className={`flex-1 w-full max-w-5xl mx-auto px-2 sm:px-4 ${embedded ? "py-2" : "lg:px-6 pt-6 lg:pt-8 pb-8"} flex flex-col items-start gap-6`}>
-        <div className="flex-1 min-w-0">
+      <div className={`mx-auto flex w-full max-w-5xl flex-1 flex-col items-stretch gap-6 px-2 sm:px-4 ${embedded ? "py-2" : "pb-8 pt-6 lg:px-6 lg:pt-8"}`}>
+        <div className="w-full min-w-0 flex-1">
           {validationError && (
             <div className="max-w-6xl mx-auto px-4 w-full mb-4 print:hidden">
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-between">
@@ -309,7 +309,7 @@ export function OfficialInquiryForm({ embedded = false }: { embedded?: boolean }
           )}
 
           {/* Main Content Area containing the authentic form cards */}
-          <main className="pb-16">
+          <main className="w-full pb-16">
 
 
         <form onSubmit={handleSubmit} className="page-wrap parent-style-form font-poppins">

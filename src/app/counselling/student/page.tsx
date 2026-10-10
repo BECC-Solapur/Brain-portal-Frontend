@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sprout,
@@ -19,17 +19,25 @@ import AuthModal, { type AuthMode } from "@/components/AuthModal";
 import { useAuth } from "@/lib/auth-context";
 import { useInquiry } from "@/lib/inquiry-context";
 import { COUNSELLING_PROGRAMS } from "@/lib/types";
+import api from "@/lib/api";
 
 export default function StudentCounsellingPage() {
   const router = useRouter();
   const { accessToken } = useAuth();
   const { setSelectedProgram } = useInquiry();
   const [authMode, setAuthMode] = useState<AuthMode | null>(null);
+  const [livePrices, setLivePrices] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    api.public.programs()
+      .then((programs) => setLivePrices(Object.fromEntries(programs.map((program) => [program.code.toLowerCase(), program.price]))))
+      .catch(() => { /* Keep catalogue defaults if pricing is temporarily unavailable. */ });
+  }, []);
 
   function handleSelectTrack(programId: string) {
     const selectedProgram = COUNSELLING_PROGRAMS.find((program) => program.id === programId);
     if (!selectedProgram) return;
-    setSelectedProgram(selectedProgram);
+    setSelectedProgram({ ...selectedProgram, price: livePrices[programId] ?? selectedProgram.price });
     if (accessToken) router.push("/calendar");
     else setAuthMode("join");
   }
@@ -162,7 +170,7 @@ export default function StudentCounsellingPage() {
                       {prog.target}
                     </span>
                   </div>
-                  <span className="text-sm font-semibold text-[#171717]">{prog.price}</span>
+                  <span className="text-sm font-semibold text-[#171717]">₹{(livePrices[prog.id] ?? Number(prog.price.replace(/[^0-9]/g, ""))).toLocaleString("en-IN")}</span>
                 </div>
 
                 <h3 className="mt-2 text-xl font-bold text-slate-950">

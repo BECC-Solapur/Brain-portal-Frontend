@@ -12,7 +12,6 @@ import {
   Check,
   Edit3,
   Camera,
-  LogOut,
   Save,
   Loader2,
   ShieldCheck,
@@ -96,7 +95,7 @@ export default function StudentProfileModal({
   onClose,
   role: roleProp,
 }: StudentProfileModalProps) {
-  const { user, logout, fetchMe } = useAuth();
+  const { user, fetchMe } = useAuth();
   const { state: inquiryState, setPersonalDetails } = useInquiry();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -232,26 +231,34 @@ export default function StudentProfileModal({
   const currentFullName =
     fullName ||
     [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() ||
+    ((user as any)?.username as string) ||
     (effectiveRole === "SuperAdmin" ? "Arpita Kulkarni"
-      : effectiveRole === "Brain Admin" ? "Operations Administrator"
-      : effectiveRole === "Counsellor" ? "Certified Counsellor"
-      : effectiveRole === "Parent" ? "Parent User"
-      : "Student");
+      : effectiveRole === "Brain Admin" ? "admin"
+      : effectiveRole === "Counsellor" ? "Dr. Ananya Sharma"
+      : effectiveRole === "Parent" ? "Kiran Kulkarni"
+      : "Nothing233");
 
   const currentEmail = user?.email || (
     effectiveRole === "SuperAdmin" ? "arpskulkarni99@gmail.com"
-      : effectiveRole === "Brain Admin" ? "admin@brain.edu"
+      : effectiveRole === "Brain Admin" ? "admin@123.com"
       : effectiveRole === "Counsellor" ? "counselling@brain.edu"
-      : effectiveRole === "Parent" ? "parent@example.com"
-      : "student@example.com"
+      : effectiveRole === "Parent" ? "becc.leat122@gmail.com"
+      : "nothingg668955@gmail.com"
   );
+
+  const currentPhone =
+    phone ||
+    user?.phone ||
+    (effectiveRole === "Parent" ? "8998884877"
+      : effectiveRole === "Counsellor" ? "+91 98230 11990"
+      : "+91 98230 11990");
 
   const studentIdDisplay =
     profile?.registrationNumber ||
     profile?.studentId ||
     user?.registrationNumber ||
     (user?.studentId as string) ||
-    "STU-72322074";
+    "STU-12096653";
 
   const currentPhoto = photoUrl || defaultPhoto;
 
@@ -409,211 +416,127 @@ export default function StudentProfileModal({
 
   const BadgeIcon = roleTheme.badgeIcon;
 
-  return (
-    <div
-      className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="profile-modal-title"
-    >
-      {/* Hidden File Input for Image Upload */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*"
-        onChange={handleImageFileChange}
-        className="hidden"
-      />
-
-      {/* Backdrop */}
+  // Dedicated SuperAdmin Profile Card Layout
+  if (effectiveRole === "SuperAdmin") {
+    return (
       <div
-        className="fixed inset-0 bg-[#17112f]/70 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      />
+        className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="superadmin-profile-title"
+      >
+        {/* Hidden File Input for Image Upload */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={handleImageFileChange}
+          className="hidden"
+        />
 
-      {/* Modal Dialog Container */}
-      <div className="relative z-10 flex w-full max-w-xl flex-col overflow-hidden rounded-[24px] bg-white shadow-[0_25px_70px_rgba(23,17,47,0.35)] animate-fade-in max-h-[92vh]">
-        {/* Top Header Card */}
-        <div className={`relative bg-gradient-to-br ${roleTheme.gradient} p-6 text-white sm:p-7`}>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close profile"
-            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white/80 transition-colors hover:bg-white/20 hover:text-white"
-          >
-            <X className="h-5 w-5" />
-          </button>
+        {/* Website Backdrop */}
+        <div
+          className="fixed inset-0 bg-[#17112f]/60 backdrop-blur-sm transition-opacity"
+          onClick={onClose}
+        />
 
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
-            {/* Avatar Photo Frame with Click-to-Upload */}
-            <div className="relative shrink-0 self-start sm:self-center">
+        {/* SuperAdmin Card in Website Color Scheme */}
+        <div className="relative z-10 w-full max-w-[580px] rounded-[22px] bg-white border border-[#d8d5e6] p-7 sm:p-8 shadow-[0_25px_70px_rgba(44,33,89,0.18)] animate-fade-in text-[#171717] font-sans">
+          {/* Status Alerts */}
+          {successMessage && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800 animate-fade-in">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 animate-fade-in">
+              <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Header Row */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              {/* Avatar Frame */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                title="Click to upload a new picture"
-                className="group relative h-20 w-20 cursor-pointer overflow-hidden rounded-2xl border-2 border-white/40 bg-white/10 shadow-lg sm:h-22 sm:w-22 transition-all hover:ring-2 hover:ring-white"
+                title="Click to upload profile picture"
+                className="group relative h-16 w-16 sm:h-[68px] sm:w-[68px] shrink-0 cursor-pointer overflow-hidden rounded-2xl border border-[#d8d5e6] bg-[#f6f3fb] shadow-sm transition-all hover:ring-2 hover:ring-[#3f2f7a]/40"
               >
                 <img
                   src={currentPhoto}
                   alt={currentFullName}
                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
                 />
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                  <Upload className="h-5 w-5 text-white" />
-                  <span className="text-[10px] font-semibold text-white">Upload</span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#3f2f7a]/60 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Upload className="h-4 w-4 text-white" />
                 </div>
                 {uploadingPhoto && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                    <Loader2 className="h-6 w-6 animate-spin text-white" />
+                    <Loader2 className="h-5 w-5 animate-spin text-white" />
                   </div>
                 )}
               </div>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                title="Upload profile picture"
-                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-white text-[#3f2f7a] shadow-md transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-              >
-                <Camera className="h-3.5 w-3.5" />
-              </button>
-            </div>
 
-            {/* Profile Info Summary */}
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider ${roleTheme.badgeBg}`}>
-                  <BadgeIcon className="h-3 w-3" /> {roleTheme.badgeLabel}
-                </span>
-                <span className="rounded-full bg-emerald-500/25 px-2 py-0.5 text-[11px] font-semibold text-emerald-300 border border-emerald-400/30">
-                  {roleTheme.statusLabel}
-                </span>
-              </div>
-
-              <h2
-                id="profile-modal-title"
-                className="mt-1.5 text-xl font-bold tracking-tight text-white sm:text-2xl truncate"
-              >
-                {currentFullName}
-              </h2>
-
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-purple-200/90">
-                <span className="inline-flex items-center gap-1">
-                  <Mail className="h-3 w-3 shrink-0 opacity-80" />
-                  <span className="truncate max-w-[200px] sm:max-w-none">
-                    {currentEmail}
-                  </span>
-                </span>
-                {phone && (
-                  <span className="inline-flex items-center gap-1">
-                    <Phone className="h-3 w-3 shrink-0 opacity-80" />
-                    <span>{phone}</span>
-                  </span>
-                )}
+              {/* Identity Info */}
+              <div>
+                <h2
+                  id="superadmin-profile-title"
+                  className="text-lg sm:text-[19px] font-bold tracking-tight text-[#171717] leading-snug"
+                >
+                  {currentFullName}
+                </h2>
+                <p className="mt-0.5 text-xs sm:text-[13px] text-[#737373]">
+                  {currentEmail}
+                </p>
+                <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-[#efeaf9] border border-[#d8d5e6] px-2.5 py-0.5 text-xs sm:text-[13px] font-semibold text-[#3f2f7a]">
+                  <ShieldCheck className="h-3.5 w-3.5 text-[#3f2f7a]" />
+                  <span>Super Administrator</span>
+                </div>
               </div>
             </div>
 
             {/* Edit Button */}
-            <div className="self-end sm:self-center">
-              {!isEditing ? (
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/25 active:scale-95"
-                >
-                  <Edit3 className="h-3.5 w-3.5" /> Edit Details
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(false)}
-                  className="rounded-xl bg-white/10 px-3 py-1.5 text-xs font-medium text-white/80 hover:bg-white/20"
-                >
-                  Cancel
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Quick upload button directly in header */}
-          <div className="mt-3.5 flex items-center justify-between border-t border-white/10 pt-3">
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1 text-xs font-medium text-white hover:bg-white/20 transition-colors cursor-pointer"
+              onClick={() => setIsEditing(!isEditing)}
+              className="rounded-full border border-[#d8d5e6] hover:border-[#3f2f7a] bg-white hover:bg-[#f6f3fb] px-4 py-1 text-xs sm:text-[13px] font-semibold text-[#171717] hover:text-[#3f2f7a] transition-all cursor-pointer shadow-sm"
             >
-              <Upload className="h-3.5 w-3.5" /> Upload picture
+              {isEditing ? "Cancel" : "Edit"}
             </button>
-            <span className="flex items-center gap-1 text-[11px] text-purple-200">
-              <Sparkles className="h-3 w-3 text-purple-300" />
-              {effectiveRole === "Student" ? "Synced with Inquiry Form" : "Active Portal Credentials"}
-            </span>
           </div>
-        </div>
 
-        {/* Scrollable Modal Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 sm:px-7 space-y-4">
-          {/* Alerts */}
-          {successMessage && (
-            <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-3 text-xs font-medium text-green-800 animate-fade-in">
-              <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
-              <span>{successMessage}</span>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700 animate-fade-in">
-              <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* ===================== EDIT FORM MODE ===================== */}
+          {/* Edit Mode */}
           {isEditing ? (
-            <form onSubmit={handleSaveProfile} className="space-y-4 pt-1">
-              {/* Photo Upload Zone */}
-              <div className="rounded-2xl border-2 border-dashed border-[#cbbfe6] bg-[#faf8fd] p-4 text-center transition-colors hover:border-[#3f2f7a]">
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#ede7f9] text-[#3f2f7a]">
-                    <Upload className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="text-xs font-semibold text-[#3f2f7a] hover:underline"
-                    >
-                      Click to upload picture
-                    </button>
-                    <span className="text-xs text-[#737373]"> from your device</span>
-                    <p className="mt-0.5 text-[11px] text-[#737373]">
-                      Supports PNG, JPG, JPEG, WEBP (auto-scaled)
-                    </p>
-                  </div>
-                </div>
-
-                {/* Optional URL Toggle */}
-                <div className="mt-3 border-t border-[#ede7f9] pt-2 text-right">
+            <form onSubmit={handleSaveProfile} className="mt-6 space-y-4 pt-4 border-t border-[#efeaf9]">
+              <div className="rounded-2xl border-2 border-dashed border-[#cbbfe6] bg-[#faf8fd] p-3.5 text-center">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs font-semibold text-[#3f2f7a] hover:underline cursor-pointer"
+                >
+                  Upload new picture from device
+                </button>
+                <div className="mt-2">
                   <button
                     type="button"
                     onClick={() => setShowUrlInput(!showUrlInput)}
-                    className="text-[11px] font-medium text-[#737373] hover:text-[#3f2f7a] underline"
+                    className="text-[11px] text-[#737373] hover:text-[#3f2f7a] underline cursor-pointer"
                   >
-                    {showUrlInput ? "Hide image URL field" : "Or enter direct image URL"}
+                    {showUrlInput ? "Hide image URL field" : "Or paste image URL"}
                   </button>
                 </div>
-
                 {showUrlInput && (
-                  <div className="mt-2 text-left">
-                    <label className="mb-1 block text-[11px] font-semibold text-[#171717]">
-                      Image URL
-                    </label>
-                    <input
-                      type="url"
-                      value={photoUrl}
-                      onChange={(e) => setPhotoUrl(e.target.value)}
-                      placeholder="https://example.com/photo.jpg"
-                      className="h-9 w-full rounded-lg border border-[#d8d5e6] px-3 text-xs text-[#171717] outline-none focus:border-[#3f2f7a]"
-                    />
-                  </div>
+                  <input
+                    type="url"
+                    value={photoUrl}
+                    onChange={(e) => setPhotoUrl(e.target.value)}
+                    placeholder="https://example.com/avatar.jpg"
+                    className="mt-2 h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                  />
                 )}
               </div>
 
@@ -625,8 +548,8 @@ export default function StudentProfileModal({
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Your full name"
-                  className="h-10 w-full rounded-xl border border-[#d8d5e6] px-3.5 text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                  placeholder="Arpita Kulkarni"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
                 />
               </div>
 
@@ -639,489 +562,1280 @@ export default function StudentProfileModal({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="+91 98230 11990"
-                  className="h-10 w-full rounded-xl border border-[#d8d5e6] px-3.5 text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
                 />
               </div>
-
-              {/* Student-specific edit fields */}
-              {effectiveRole === "Student" && (
-                <>
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-[#171717]">
-                      School / College Name
-                    </label>
-                    <input
-                      type="text"
-                      value={schoolCollegeName}
-                      onChange={(e) => setSchoolCollegeName(e.target.value)}
-                      placeholder="Your school or college"
-                      className="h-10 w-full rounded-xl border border-[#d8d5e6] px-3.5 text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-xs font-semibold text-[#171717]">
-                      Residential Address
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Your residential address"
-                      className="w-full rounded-xl border border-[#d8d5e6] p-3 text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
-                    />
-                  </div>
-                </>
-              )}
 
               <div className="flex gap-2 pt-2">
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex h-10 flex-1 items-center justify-center gap-2 rounded-xl bg-[#3f2f7a] text-sm font-semibold text-white transition-colors hover:bg-[#2c2159] disabled:opacity-60 cursor-pointer"
+                  className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-[#3f2f7a] hover:bg-[#2c2159] text-xs sm:text-sm font-semibold text-white transition-colors cursor-pointer disabled:opacity-60 shadow-sm"
                 >
                   {saving ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Saving...
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
                     </>
                   ) : (
                     <>
-                      <Save className="h-4 w-4" /> Save Profile Details
+                      <Save className="h-3.5 w-3.5" /> Save Changes
                     </>
                   )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="h-9 rounded-full border border-[#d8d5e6] hover:border-[#3f2f7a] bg-white hover:bg-[#f6f3fb] px-5 text-xs sm:text-sm font-semibold text-[#171717] transition-colors cursor-pointer shadow-sm"
+                >
+                  Cancel
                 </button>
               </div>
             </form>
           ) : (
-            /* ===================== VIEW MODE (ROLE-SPECIFIC) ===================== */
-            <div className="space-y-3.5">
-              {/* ---------------- 1. SUPERADMIN VIEW ---------------- */}
-              {effectiveRole === "SuperAdmin" && (
-                <>
-                  {/* Master Authority Card */}
-                  <div className="rounded-2xl border border-[#c9c2e3] bg-gradient-to-br from-[#f8f5fc] to-[#f0ebfa] p-4.5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-[#3f2f7a] uppercase tracking-wider">
-                        <ShieldCheck className="h-4 w-4 text-[#3f2f7a]" /> Master Authority &amp; System Scope
-                      </div>
-                      <span className="rounded-full bg-[#3f2f7a] px-2.5 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
-                        Enterprise Root
-                      </span>
-                    </div>
+            /* View Mode */
+            <>
+              {/* Clean Faint Divider Line */}
+              <div className="my-6 border-b border-[#efeaf9]" />
 
-                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div className="rounded-xl bg-white p-3 border border-[#e4dff2]">
-                        <span className="text-[11px] text-[#737373] block">Administrative Level</span>
-                        <span className="font-semibold text-sm text-[#171717]">Super Administrator</span>
-                      </div>
-                      <div className="rounded-xl bg-white p-3 border border-[#e4dff2]">
-                        <span className="text-[11px] text-[#737373] block">Master Organization</span>
-                        <span className="font-semibold text-sm text-[#171717]">BRAIN Educational Center</span>
-                      </div>
-                    </div>
-
-                    <p className="mt-3 text-xs text-[#525252] leading-relaxed">
-                      Root access enabled across multi-tenant centers. Full governance over student registration pipelines,
-                      certified counsellor rosters, diagnostic appointments, and security audit logs.
-                    </p>
+              {/* Organization access */}
+              <div>
+                <h3 className="text-sm sm:text-[15px] font-bold text-[#171717]">
+                  Organization access
+                </h3>
+                <div className="mt-4 space-y-3.5 text-xs sm:text-sm">
+                  <div className="flex items-baseline">
+                    <span className="w-32 sm:w-36 shrink-0 text-[#737373]">Organization</span>
+                    <span className="font-bold text-[#171717]">BRAIN Educational Center</span>
                   </div>
-
-                  {/* Governance Privileges Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-[#e6e2f2] bg-white p-4 shadow-sm space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-[#737373]">
-                        <Building2 className="h-3.5 w-3.5 text-[#3f2f7a]" /> Headquarters &amp; Branches
-                      </div>
-                      <p className="text-sm font-semibold text-[#171717]">Pune Main Campus</p>
-                      <p className="text-[11px] text-[#737373]">Primary Organization ID: #00000001</p>
-                    </div>
-
-                    <div className="rounded-2xl border border-[#e6e2f2] bg-white p-4 shadow-sm space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-[#737373]">
-                        <KeyRound className="h-3.5 w-3.5 text-[#3f2f7a]" /> Access Privileges
-                      </div>
-                      <p className="text-sm font-semibold text-[#171717]">Unrestricted Root</p>
-                      <p className="text-[11px] text-[#737373]">User Access · Roles · Audit Trail</p>
-                    </div>
+                  <div className="flex items-baseline">
+                    <span className="w-32 sm:w-36 shrink-0 text-[#737373]">Location</span>
+                    <span className="font-medium text-[#171717]">Pune Main Campus</span>
                   </div>
+                </div>
+              </div>
 
-                  {/* Active Capabilities Checklist */}
-                  <div className="rounded-2xl border border-[#e4dff2] bg-white p-4 text-xs space-y-2.5 shadow-sm">
-                    <p className="font-semibold text-[#171717] flex items-center gap-1.5">
-                      <Lock className="h-3.5 w-3.5 text-[#3f2f7a]" /> Active SuperAdmin Capabilities
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[#525252]">
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                        <span>Counsellor Onboarding &amp; Deletion</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                        <span>Cross-Branch User Provisioning</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                        <span>Full Activity &amp; Audit Trail Telemetry</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                        <span>System Settings &amp; Fee Configurations</span>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
+              {/* Permissions */}
+              <div className="mt-7">
+                <h3 className="text-sm sm:text-[15px] font-bold text-[#171717] mb-2.5">
+                  Permissions
+                </h3>
+                <p className="text-xs sm:text-sm text-[#525252] leading-relaxed">
+                  User management · Roles · Audit logs · System settings
+                </p>
+              </div>
 
-              {/* ---------------- 2. BRAIN ADMIN VIEW ---------------- */}
-              {effectiveRole === "Brain Admin" && (
-                <>
-                  <div className="rounded-2xl border border-[#d8d5e6] bg-gradient-to-br from-[#faf8fd] to-[#f4effc] p-4.5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-[#3f2f7a] uppercase tracking-wider">
-                        <Building2 className="h-4 w-4 text-[#3f2f7a]" /> Campus Operations Administration
-                      </div>
-                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
-                        Active Ops
-                      </span>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div className="rounded-xl bg-white p-3 border border-[#e4dff2]">
-                        <span className="text-[11px] text-[#737373] block">Assigned Department</span>
-                        <span className="font-semibold text-sm text-[#171717]">Admissions &amp; Operations</span>
-                      </div>
-                      <div className="rounded-xl bg-white p-3 border border-[#e4dff2]">
-                        <span className="text-[11px] text-[#737373] block">Operational Campus</span>
-                        <span className="font-semibold text-sm text-[#171717]">Pune Campus · Center 1</span>
-                      </div>
-                    </div>
-
-                    <p className="mt-3 text-xs text-[#525252] leading-relaxed">
-                      Coordinates walk-in inquiries, appointment scheduling, and fee reconciliation for all academic cohorts.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-[#e6e2f2] bg-white p-4 shadow-sm space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-[#737373]">
-                        <Calendar className="h-3.5 w-3.5 text-[#3f2f7a]" /> Appointment Slots
-                      </div>
-                      <p className="text-sm font-semibold text-[#171717]">Daily Schedule Control</p>
-                      <p className="text-[11px] text-[#737373]">In-Person &amp; Online Room Linkages</p>
-                    </div>
-
-                    <div className="rounded-2xl border border-[#e6e2f2] bg-white p-4 shadow-sm space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-[#737373]">
-                        <FileText className="h-3.5 w-3.5 text-[#3f2f7a]" /> Fee Verification
-                      </div>
-                      <p className="text-sm font-semibold text-[#171717]">GST Ledgers &amp; Receipts</p>
-                      <p className="text-[11px] text-[#737373]">Razorpay Gateway &amp; Cash Desks</p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* ---------------- 3. COUNSELLOR VIEW ---------------- */}
-              {effectiveRole === "Counsellor" && (
-                <>
-                  <div className="rounded-2xl border border-[#d8d5e6] bg-gradient-to-br from-[#f8faff] to-[#eef4fe] p-4.5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-[#1e3a8a] uppercase tracking-wider">
-                        <GraduationCap className="h-4 w-4 text-[#1e3a8a]" /> Clinical &amp; Mentorship Portfolio
-                      </div>
-                      <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[10px] font-bold text-sky-800">
-                        Certified Advisor
-                      </span>
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                      <div className="rounded-xl bg-white p-3 border border-sky-100">
-                        <span className="text-[11px] text-[#737373] block">Advisory Designation</span>
-                        <span className="font-semibold text-sm text-[#171717]">Certified Career Counsellor</span>
-                      </div>
-                      <div className="rounded-xl bg-white p-3 border border-sky-100">
-                        <span className="text-[11px] text-[#737373] block">Counseling Room</span>
-                        <span className="font-semibold text-sm text-[#171717]">Pune Campus · Room 2B</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 rounded-xl bg-white p-3 border border-sky-100 text-xs">
-                      <span className="text-[11px] text-[#737373] block mb-1">Specialization Domains</span>
-                      <div className="flex flex-wrap gap-1.5">
-                        {["Career Guidance", "Aptitude Assessment", "DAB-26 Psychometrics", "Cognitive Coaching"].map((tag) => (
-                          <span key={tag} className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-800 border border-sky-200">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-[#e6e2f2] bg-white p-4 shadow-sm space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-[#737373]">
-                        <Activity className="h-3.5 w-3.5 text-[#1e3a8a]" /> Student Cohorts
-                      </div>
-                      <p className="text-sm font-semibold text-[#171717]">Mapped Student Dossiers</p>
-                      <p className="text-[11px] text-[#737373]">Daily check-ins &amp; action plan tracking</p>
-                    </div>
-
-                    <div className="rounded-2xl border border-[#e6e2f2] bg-white p-4 shadow-sm space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-[#737373]">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-[#1e3a8a]" /> Session Conclusions
-                      </div>
-                      <p className="text-sm font-semibold text-[#171717]">Published Recommendations</p>
-                      <p className="text-[11px] text-[#737373]">Synchronized to Student &amp; Parent portals</p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* ---------------- 4. PARENT VIEW ---------------- */}
-              {effectiveRole === "Parent" && (
-                <>
-                  <div className="rounded-2xl border border-[#e6dced] bg-gradient-to-br from-[#fbf8fe] to-[#f4edfb] p-4.5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-[#4a2874] uppercase tracking-wider">
-                        <Users className="h-4 w-4 text-[#4a2874]" /> Linked Student Account
-                      </div>
-                      <span className="rounded-full bg-purple-100 px-2.5 py-0.5 text-[10px] font-bold text-purple-800">
-                        Parent Account
-                      </span>
-                    </div>
-
-                    <div className="mt-3 rounded-xl bg-white p-3.5 border border-[#e8dfef] text-xs space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[#737373]">Account Status:</span>
-                        <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                          Active Guardian Portal
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[#737373]">Associated Campus:</span>
-                        <span className="font-semibold text-[#171717]">Pune Main Campus</span>
-                      </div>
-                    </div>
-
-                    <p className="mt-3 text-xs text-[#525252] leading-relaxed">
-                      You are connected to the official BRAIN parent portal. You can view daily updates, review psychologist conclusions,
-                      and send continuous feedback to your child&apos;s assigned counsellor.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="rounded-2xl border border-[#e6e2f2] bg-white p-4 shadow-sm space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-[#737373]">
-                        <Activity className="h-3.5 w-3.5 text-[#3f2f7a]" /> Daily Updates
-                      </div>
-                      <p className="text-sm font-semibold text-[#171717]">Ward Action Plans</p>
-                      <p className="text-[11px] text-[#737373]">Daily check-ins &amp; routine tracking</p>
-                    </div>
-
-                    <div className="rounded-2xl border border-[#e6e2f2] bg-white p-4 shadow-sm space-y-1.5">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-[#737373]">
-                        <HeartHandshake className="h-3.5 w-3.5 text-[#3f2f7a]" /> Counsellor Feedback
-                      </div>
-                      <p className="text-sm font-semibold text-[#171717]">Direct Mentor Channel</p>
-                      <p className="text-[11px] text-[#737373]">Voice &amp; text observation submissions</p>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* ---------------- 5. STUDENT VIEW ---------------- */}
-              {effectiveRole === "Student" && (
-                <>
-                  {/* Field 1: Student ID Card */}
-                  <div className="rounded-2xl border border-[#e4dfef] bg-gradient-to-br from-[#faf8fd] to-[#f4effc] p-4 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-[#3f2f7a]">
-                        <GraduationCap className="h-4 w-4" /> Student ID / Registration No.
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleCopy(studentIdDisplay)}
-                        className="flex items-center gap-1 rounded-lg border border-[#d8d5e6] bg-white px-2.5 py-1 text-xs font-semibold text-[#3f2f7a] shadow-sm transition-colors hover:bg-[#f6f3fb] cursor-pointer"
-                      >
-                        {copied ? (
-                          <>
-                            <Check className="h-3.5 w-3.5 text-green-600" /> Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3.5 w-3.5" /> Copy ID
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="mt-2.5 flex items-baseline gap-2">
-                      <span className="font-mono text-2xl font-bold tracking-tight text-[#171717]">
-                        {studentIdDisplay}
-                      </span>
-                      <span className="rounded-full bg-[#ece5fa] px-2 py-0.5 text-[11px] font-semibold text-[#3f2f7a]">
-                        Verified
-                      </span>
-                    </div>
-
-                    <p className="mt-1.5 text-xs text-[#737373]">
-                      Share this ID with your parent to link their parent portal account.
-                    </p>
-                  </div>
-
-                  {/* Field 2 & 3: School / College Name & Address */}
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="flex flex-col justify-between rounded-2xl border border-[#e6e2f2] bg-white p-4 shadow-sm">
-                      <div>
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-[#737373]">
-                          <Building2 className="h-3.5 w-3.5 text-[#3f2f7a]" /> School / College Name
-                        </div>
-                        <p className="mt-2 text-sm font-semibold text-[#171717] leading-snug">
-                          {profile?.schoolCollegeName || user?.schoolCollegeName || (
-                            <span className="italic font-normal text-gray-400">Not specified</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col justify-between rounded-2xl border border-[#e6e2f2] bg-white p-4 shadow-sm">
-                      <div>
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-[#737373]">
-                          <MapPin className="h-3.5 w-3.5 text-[#3f2f7a]" /> Residential Address
-                        </div>
-                        <p className="mt-2 text-sm font-semibold text-[#171717] leading-snug break-words">
-                          {profile?.address || user?.address || (
-                            <span className="italic font-normal text-gray-400">Not specified</span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Field 4: Parent Profile Connected or Not */}
-                  <div
-                    className={`rounded-2xl border p-4.5 transition-all shadow-sm ${
-                      profile?.parentConnected || user?.parentConnected
-                        ? "border-green-200 bg-green-50/70"
-                        : "border-amber-200 bg-amber-50/70"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
-                        <Users
-                          className={`h-4 w-4 ${
-                            profile?.parentConnected || user?.parentConnected
-                              ? "text-green-700"
-                              : "text-amber-700"
-                          }`}
-                        />
-                        <span
-                          className={
-                            profile?.parentConnected || user?.parentConnected
-                              ? "text-green-900"
-                              : "text-amber-900"
-                          }
-                        >
-                          Parent Profile
-                        </span>
-                      </div>
-
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          profile?.parentConnected || user?.parentConnected
-                            ? "bg-green-100 text-green-800"
-                            : "bg-amber-100 text-amber-800"
-                        }`}
-                      >
-                        {profile?.parentConnected || user?.parentConnected ? (
-                          <>
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-700" /> Connected
-                          </>
-                        ) : (
-                          <>
-                            <AlertCircle className="h-3.5 w-3.5 text-amber-700" /> Not Connected
-                          </>
-                        )}
-                      </span>
-                    </div>
-
-                    {profile?.parentConnected && profile.parent ? (
-                      <div className="mt-3 rounded-xl bg-white/90 p-3.5 text-xs space-y-1.5 border border-green-100 shadow-sm">
-                        <div className="flex justify-between">
-                          <span className="text-[#737373]">Parent Name:</span>
-                          <span className="font-semibold text-[#171717]">
-                            {profile.parent.fullName}
-                          </span>
-                        </div>
-                        {profile.parent.phone && (
-                          <div className="flex justify-between">
-                            <span className="text-[#737373]">Phone:</span>
-                            <span className="font-semibold text-[#171717]">
-                              {profile.parent.phone}
-                            </span>
-                          </div>
-                        )}
-                        {profile.parent.email && (
-                          <div className="flex justify-between">
-                            <span className="text-[#737373]">Email:</span>
-                            <span className="font-semibold text-[#171717]">
-                              {profile.parent.email}
-                            </span>
-                          </div>
-                        )}
-                        {profile.parent.relationship && (
-                          <div className="flex justify-between">
-                            <span className="text-[#737373]">Relationship:</span>
-                            <span className="font-semibold capitalize text-[#171717]">
-                              {profile.parent.relationship}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="mt-2.5 text-xs text-amber-950 leading-relaxed">
-                        <p className="text-amber-900">
-                          Your parent or guardian has not connected their account yet.
-                        </p>
-                        <p className="mt-1 text-amber-950">
-                          They can select <strong className="font-semibold text-[#3f2f7a]">Parent</strong> on
-                          the Sign Up page and enter your Student ID (
-                          <strong className="whitespace-nowrap font-mono text-sm font-bold text-[#3f2f7a]">
-                            {studentIdDisplay}
-                          </strong>
-                          ) to link accounts.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+              {/* Footer */}
+              <div className="mt-8 sm:mt-10 flex items-center justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-xl border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 px-6 py-2 text-sm font-semibold text-[#111827] transition-all cursor-pointer shadow-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </>
           )}
         </div>
+      </div>
+    );
+  }
 
-        {/* Modal Footer */}
-        <div className="flex items-center justify-between border-t border-gray-100 bg-[#faf9fc] px-6 py-4 sm:px-7">
-          <button
-            type="button"
-            onClick={() => {
-              logout();
-              onClose();
-            }}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 transition-colors hover:text-red-700 cursor-pointer"
-          >
-            <LogOut className="h-4 w-4" /> Sign out
-          </button>
+  // Dedicated Student Profile Card Layout (Matching provided design)
+  if (effectiveRole === "Student") {
+    const currentPhone = phone || user?.phone || profile?.phone || "7585898223";
+    const currentSchool = schoolCollegeName || profile?.schoolCollegeName || user?.schoolCollegeName || "wcas";
+    const currentAddress = address || profile?.address || user?.address || "solapur";
+    const parentName = profile?.parent?.fullName || (user as any)?.parentName || "Kiran Kulkarni";
+    const parentPhone = profile?.parent?.phone || (user as any)?.parentPhone || "8998884877";
+    const parentEmail = profile?.parent?.email || (user as any)?.parentEmail || "becc.leat122@gmail.com";
+    const isParentConnected = profile?.parentConnected ?? (Boolean(profile?.parent) || true);
 
+    return (
+      <div
+        className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="student-profile-title"
+      >
+        {/* Hidden File Input for Image Upload */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={handleImageFileChange}
+          className="hidden"
+        />
+
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+          onClick={onClose}
+        />
+
+        {/* Student Profile Card Container */}
+        <div className="relative z-10 w-full max-w-[620px] rounded-2xl bg-white p-6 sm:p-8 shadow-2xl border border-gray-100 font-sans animate-fade-in text-[#111827]">
+          {/* Close 'X' Button in Top Right */}
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[#d8d5e6] bg-white px-5 py-2 text-xs font-semibold text-[#171717] shadow-sm transition-colors hover:bg-[#f6f3fb] cursor-pointer"
+            aria-label="Close"
+            className="absolute right-5 top-5 p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg cursor-pointer"
           >
-            Close
+            <X className="h-5 w-5" />
           </button>
+
+          {/* Status Alerts */}
+          {successMessage && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800 animate-fade-in">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 animate-fade-in">
+              <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Header Row */}
+          <div className="flex items-center gap-4 pr-8">
+            {/* Circular Avatar */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              title="Click to upload profile picture"
+              className="group relative h-16 w-16 sm:h-[72px] sm:w-[72px] shrink-0 cursor-pointer overflow-hidden rounded-full border border-gray-200 bg-gray-100 shadow-sm transition-all hover:ring-2 hover:ring-purple-400"
+            >
+              <img
+                src={currentPhoto}
+                alt={currentFullName}
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                <Upload className="h-4 w-4 text-white" />
+              </div>
+              {uploadingPhoto && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <Loader2 className="h-5 w-5 animate-spin text-white" />
+                </div>
+              )}
+            </div>
+
+            {/* Identity Info */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center flex-wrap gap-2">
+                <h2
+                  id="student-profile-title"
+                  className="text-xl sm:text-2xl font-bold tracking-tight text-[#111827] leading-tight"
+                >
+                  {currentFullName}
+                </h2>
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#f3e8ff] px-2.5 py-0.5 text-xs font-semibold text-[#7e22ce]">
+                  <GraduationCap className="h-3.5 w-3.5 text-[#7e22ce]" />
+                  <span>Student</span>
+                </span>
+              </div>
+
+              <div className="mt-1.5 flex items-center flex-wrap gap-x-2 gap-y-1 text-xs sm:text-[13px] text-[#6b7280]">
+                <span className="inline-flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5 text-[#6b7280] shrink-0" />
+                  <span>{currentEmail}</span>
+                </span>
+                <span className="text-gray-300">|</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5 text-[#6b7280] shrink-0" />
+                  <span>{currentPhone}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Edit details button on top right */}
+            <div className="ml-auto self-center pl-2">
+              <button
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+                className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-[#7c3aed] hover:text-[#6d28d9] transition-colors cursor-pointer"
+              >
+                <Edit3 className="h-4 w-4" />
+                <span>{isEditing ? "Cancel" : "Edit details"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Edit Mode Form */}
+          {isEditing ? (
+            <form onSubmit={handleSaveProfile} className="mt-6 space-y-4 pt-4 border-t border-gray-100">
+              <div className="rounded-2xl border-2 border-dashed border-[#cbbfe6] bg-[#faf8fd] p-3.5 text-center">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs font-semibold text-[#3f2f7a] hover:underline cursor-pointer"
+                >
+                  Upload new picture from device
+                </button>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowUrlInput(!showUrlInput)}
+                    className="text-[11px] text-[#737373] hover:text-[#3f2f7a] underline cursor-pointer"
+                  >
+                    {showUrlInput ? "Hide image URL field" : "Or paste image URL"}
+                  </button>
+                </div>
+                {showUrlInput && (
+                  <input
+                    type="url"
+                    value={photoUrl}
+                    onChange={(e) => setPhotoUrl(e.target.value)}
+                    placeholder="https://example.com/avatar.jpg"
+                    className="mt-2 h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#171717]">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Nothing233"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#171717]">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="7585898223"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#171717]">
+                  School / College Name
+                </label>
+                <input
+                  type="text"
+                  value={schoolCollegeName}
+                  onChange={(e) => setSchoolCollegeName(e.target.value)}
+                  placeholder="wcas"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#171717]">
+                  Residential Address
+                </label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="solapur"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#7c3aed] hover:bg-[#6d28d9] text-xs sm:text-sm font-semibold text-white transition-colors cursor-pointer disabled:opacity-60 shadow-sm"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" /> Save Profile Details
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="h-9 rounded-xl border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 px-5 text-xs sm:text-sm font-semibold text-[#111827] transition-colors cursor-pointer shadow-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* View Mode */
+            <>
+              {/* Divider Line */}
+              <div className="my-6 border-b border-gray-100" />
+
+              {/* Student ID Row */}
+              <div className="flex items-center">
+                <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                  Student ID
+                </span>
+                <span className="text-base sm:text-lg font-bold text-[#111827]">
+                  {studentIdDisplay}
+                </span>
+                <span className="ml-3 inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <span>Verified</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(studentIdDisplay)}
+                  className="ml-auto inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-[#4b5563] hover:bg-gray-50 transition-colors cursor-pointer shadow-sm"
+                >
+                  {copied ? (
+                    <>
+                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      <span>Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-3.5 w-3.5 text-[#6b7280]" />
+                      <span>Copy ID</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* School / College Row */}
+              <div className="my-3.5 border-b border-gray-100" />
+              <div className="flex items-baseline">
+                <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                  School / College
+                </span>
+                <span className="text-xs sm:text-sm font-semibold text-[#111827]">
+                  {currentSchool}
+                </span>
+              </div>
+
+              {/* Residential Address Row */}
+              <div className="my-3.5 border-b border-gray-100" />
+              <div className="flex items-baseline">
+                <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                  Residential Address
+                </span>
+                <span className="text-xs sm:text-sm font-semibold text-[#111827]">
+                  {currentAddress}
+                </span>
+              </div>
+
+              {/* Parent Account Section */}
+              <div className="mt-7">
+                <div className="flex items-center justify-between mb-3.5">
+                  <h3 className="text-base font-bold text-[#111827]">Parent account</h3>
+                  {isParentConnected ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+                      <span className="h-2 w-2 rounded-full bg-emerald-500" /> Connected
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600">
+                      <span className="h-2 w-2 rounded-full bg-amber-500" /> Not connected
+                    </span>
+                  )}
+                </div>
+
+                {/* Parent Name */}
+                <div className="flex items-baseline">
+                  <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                    Parent Name
+                  </span>
+                  <span className="text-xs sm:text-sm font-medium text-[#111827]">
+                    {parentName}
+                  </span>
+                </div>
+
+                {/* Phone */}
+                <div className="my-3.5 border-b border-gray-100" />
+                <div className="flex items-baseline">
+                  <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                    Phone
+                  </span>
+                  <span className="text-xs sm:text-sm font-medium text-[#111827]">
+                    {parentPhone}
+                  </span>
+                </div>
+
+                {/* Email */}
+                <div className="my-3.5 border-b border-gray-100" />
+                <div className="flex items-baseline">
+                  <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                    Email
+                  </span>
+                  <span className="text-xs sm:text-sm font-medium text-[#111827]">
+                    {parentEmail}
+                  </span>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-8 sm:mt-10 flex items-center justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-xl border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 px-6 py-2 text-sm font-semibold text-[#111827] transition-all cursor-pointer shadow-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // Dedicated Brain Admin Profile Card Layout (Matching provided design)
+  if (effectiveRole === "Brain Admin") {
+    return (
+      <div
+        className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-profile-title"
+      >
+        {/* Hidden File Input for Image Upload */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={handleImageFileChange}
+          className="hidden"
+        />
+
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+          onClick={onClose}
+        />
+
+        {/* Brain Admin Profile Card Container */}
+        <div className="relative z-10 w-full max-w-[620px] rounded-2xl bg-white p-6 sm:p-8 shadow-2xl border border-gray-100 font-sans animate-fade-in text-[#111827]">
+          {/* Close 'X' Button in Top Right */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute right-5 top-5 p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg cursor-pointer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          {/* Status Alerts */}
+          {successMessage && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800 animate-fade-in">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 animate-fade-in">
+              <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Header Row */}
+          <div className="flex items-center gap-4 pr-8">
+            {/* Circular Avatar with Active Status Dot */}
+            <div className="relative shrink-0">
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                title="Click to upload profile picture"
+                className="group relative h-16 w-16 sm:h-[72px] sm:w-[72px] cursor-pointer overflow-hidden rounded-full border border-gray-200 bg-gray-100 shadow-sm transition-all hover:ring-2 hover:ring-purple-400"
+              >
+                <img
+                  src={currentPhoto}
+                  alt={currentFullName}
+                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                  <Upload className="h-4 w-4 text-white" />
+                </div>
+                {uploadingPhoto && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                    <Loader2 className="h-5 w-5 animate-spin text-white" />
+                  </div>
+                )}
+              </div>
+              <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white shadow-sm" />
+            </div>
+
+            {/* Identity Info */}
+            <div className="min-w-0 flex-1">
+              <h2
+                id="admin-profile-title"
+                className="text-xl sm:text-2xl font-bold tracking-tight text-[#111827] leading-tight"
+              >
+                {currentFullName}
+              </h2>
+              <p className="mt-0.5 text-xs sm:text-[13px] text-[#6b7280]">
+                {currentEmail}
+              </p>
+              <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-[#f3e8ff] px-2.5 py-0.5 text-[11px] font-semibold text-[#7e22ce] uppercase tracking-wider">
+                <Building2 className="h-3 w-3 text-[#7e22ce]" />
+                <span>BRAIN ADMIN PROFILE</span>
+              </div>
+            </div>
+
+            {/* Edit details button on top right */}
+            <div className="ml-auto self-center pl-2">
+              <button
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-[#7e22ce] transition-colors cursor-pointer shadow-sm"
+              >
+                <Edit3 className="h-4 w-4" />
+                <span>{isEditing ? "Cancel" : "Edit Details"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Edit Mode Form */}
+          {isEditing ? (
+            <form onSubmit={handleSaveProfile} className="mt-6 space-y-4 pt-4 border-t border-gray-100">
+              <div className="rounded-2xl border-2 border-dashed border-[#cbbfe6] bg-[#faf8fd] p-3.5 text-center">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs font-semibold text-[#3f2f7a] hover:underline cursor-pointer"
+                >
+                  Upload new picture from device
+                </button>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowUrlInput(!showUrlInput)}
+                    className="text-[11px] text-[#737373] hover:text-[#3f2f7a] underline cursor-pointer"
+                  >
+                    {showUrlInput ? "Hide image URL field" : "Or paste image URL"}
+                  </button>
+                </div>
+                {showUrlInput && (
+                  <input
+                    type="url"
+                    value={photoUrl}
+                    onChange={(e) => setPhotoUrl(e.target.value)}
+                    placeholder="https://example.com/avatar.jpg"
+                    className="mt-2 h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#171717]">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="admin"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#171717]">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+91 98230 11990"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#7c3aed] hover:bg-[#6d28d9] text-xs sm:text-sm font-semibold text-white transition-colors cursor-pointer disabled:opacity-60 shadow-sm"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" /> Save Profile Details
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="h-9 rounded-xl border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 px-5 text-xs sm:text-sm font-semibold text-[#111827] transition-colors cursor-pointer shadow-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* View Mode */
+            <>
+              {/* Divider Line */}
+              <div className="my-6 border-b border-gray-100" />
+
+              {/* Assigned Department Row */}
+              <div className="flex items-baseline">
+                <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                  Assigned Department
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-[#111827]">
+                  Admissions & Operations
+                </span>
+              </div>
+
+              {/* Operational Campus Row */}
+              <div className="my-3.5 border-b border-gray-100" />
+              <div className="flex items-baseline">
+                <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                  Operational Campus
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-[#111827]">
+                  Pune Campus · Center 1
+                </span>
+              </div>
+
+              {/* Description Paragraph */}
+              <div className="my-3.5 border-b border-gray-100" />
+              <p className="text-xs sm:text-sm text-[#4b5563] leading-relaxed">
+                Coordinates walk-in inquiries, appointment scheduling, and fee reconciliation for all academic cohorts.
+              </p>
+
+              {/* Operational Features */}
+              <div className="my-4 border-b border-gray-100" />
+              <div className="space-y-2">
+                {/* Daily Schedule Control */}
+                <div className="flex items-center gap-3.5 py-1">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f3e8ff] text-[#7e22ce] shrink-0">
+                    <Calendar className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-[#111827]">Daily Schedule Control</p>
+                    <p className="text-[11px] sm:text-xs text-[#6b7280]">In-Person & Online Room Linkages</p>
+                  </div>
+                </div>
+
+                {/* GST Ledgers & Receipts */}
+                <div className="flex items-center gap-3.5 py-1">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f3e8ff] text-[#7e22ce] shrink-0">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-[#111827]">GST Ledgers & Receipts</p>
+                    <p className="text-[11px] sm:text-xs text-[#6b7280]">Razorpay Gateway & Cash Desks</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-8 sm:mt-10 flex items-center justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-xl border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 px-6 py-2 text-sm font-semibold text-[#111827] transition-all cursor-pointer shadow-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Dedicated Parent Profile Card Layout (Matching provided design)
+  if (effectiveRole === "Parent") {
+    const currentPhone = phone || user?.phone || "8998884877";
+
+    return (
+      <div
+        className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="parent-profile-title"
+      >
+        {/* Hidden File Input for Image Upload */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={handleImageFileChange}
+          className="hidden"
+        />
+
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+          onClick={onClose}
+        />
+
+        {/* Parent Profile Card Container */}
+        <div className="relative z-10 w-full max-w-[620px] rounded-2xl bg-white p-6 sm:p-8 shadow-2xl border border-gray-100 font-sans animate-fade-in text-[#111827]">
+          {/* Close 'X' Button in Top Right */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute right-5 top-5 p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg cursor-pointer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          {/* Status Alerts */}
+          {successMessage && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800 animate-fade-in">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 animate-fade-in">
+              <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Header Row */}
+          <div className="flex items-center gap-4 pr-8">
+            {/* Circular Avatar */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              title="Click to upload profile picture"
+              className="group relative h-16 w-16 sm:h-[72px] sm:w-[72px] shrink-0 cursor-pointer overflow-hidden rounded-full border border-gray-200 bg-gray-100 shadow-sm transition-all hover:ring-2 hover:ring-purple-400"
+            >
+              <img
+                src={currentPhoto}
+                alt={currentFullName}
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                <Upload className="h-4 w-4 text-white" />
+              </div>
+              {uploadingPhoto && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <Loader2 className="h-5 w-5 animate-spin text-white" />
+                </div>
+              )}
+            </div>
+
+            {/* Identity Info */}
+            <div className="min-w-0 flex-1">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-[#f3e8ff] px-2.5 py-0.5 text-[11px] font-semibold text-[#7e22ce] uppercase tracking-wider mb-1">
+                <Users className="h-3 w-3 text-[#7e22ce]" />
+                <span>PARENT PROFILE</span>
+              </div>
+              <h2
+                id="parent-profile-title"
+                className="text-xl sm:text-2xl font-bold tracking-tight text-[#111827] leading-tight"
+              >
+                {currentFullName}
+              </h2>
+              <div className="mt-1 flex items-center flex-wrap gap-x-2 gap-y-1 text-xs sm:text-[13px] text-[#6b7280]">
+                <span className="inline-flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5 text-[#6b7280] shrink-0" />
+                  <span>{currentEmail}</span>
+                </span>
+                <span className="text-gray-300">|</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5 text-[#6b7280] shrink-0" />
+                  <span>{currentPhone}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Edit details button on top right */}
+            <div className="ml-auto self-center pl-2">
+              <button
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-[#7e22ce] transition-colors cursor-pointer shadow-sm"
+              >
+                <Edit3 className="h-4 w-4" />
+                <span>{isEditing ? "Cancel" : "Edit Details"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Edit Mode Form */}
+          {isEditing ? (
+            <form onSubmit={handleSaveProfile} className="mt-6 space-y-4 pt-4 border-t border-gray-100">
+              <div className="rounded-2xl border-2 border-dashed border-[#cbbfe6] bg-[#faf8fd] p-3.5 text-center">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs font-semibold text-[#3f2f7a] hover:underline cursor-pointer"
+                >
+                  Upload new picture from device
+                </button>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowUrlInput(!showUrlInput)}
+                    className="text-[11px] text-[#737373] hover:text-[#3f2f7a] underline cursor-pointer"
+                  >
+                    {showUrlInput ? "Hide image URL field" : "Or paste image URL"}
+                  </button>
+                </div>
+                {showUrlInput && (
+                  <input
+                    type="url"
+                    value={photoUrl}
+                    onChange={(e) => setPhotoUrl(e.target.value)}
+                    placeholder="https://example.com/avatar.jpg"
+                    className="mt-2 h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#171717]">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Kiran Kulkarni"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#171717]">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="8998884877"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#7c3aed] hover:bg-[#6d28d9] text-xs sm:text-sm font-semibold text-white transition-colors cursor-pointer disabled:opacity-60 shadow-sm"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" /> Save Profile Details
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="h-9 rounded-xl border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 px-5 text-xs sm:text-sm font-semibold text-[#111827] transition-colors cursor-pointer shadow-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* View Mode */
+            <>
+              {/* Divider Line */}
+              <div className="my-6 border-b border-gray-100" />
+
+              {/* Linked Student Account Header Row */}
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-[#111827] uppercase tracking-wider">
+                  <Users className="h-4 w-4 text-[#7e22ce]" />
+                  <span>LINKED STUDENT ACCOUNT</span>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" /> Active
+                </span>
+              </div>
+
+              {/* Account Status Row */}
+              <div className="my-3.5 border-b border-gray-100" />
+              <div className="flex items-baseline">
+                <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                  Account Status
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-[#111827]">
+                  Active Guardian Portal
+                </span>
+              </div>
+
+              {/* Associated Campus Row */}
+              <div className="my-3.5 border-b border-gray-100" />
+              <div className="flex items-baseline">
+                <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                  Associated Campus
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-[#111827]">
+                  Pune Main Campus
+                </span>
+              </div>
+
+              {/* Operational Features */}
+              <div className="my-4 border-b border-gray-100" />
+              <div className="space-y-2">
+                {/* Daily Updates */}
+                <div className="flex items-center gap-3.5 py-1">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f3e8ff] text-[#7e22ce] shrink-0">
+                    <Activity className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-[#111827]">Daily Updates</p>
+                    <p className="text-[11px] sm:text-xs text-[#6b7280]">Ward action plans · Daily check-ins &amp; routine tracking</p>
+                  </div>
+                </div>
+
+                {/* Counsellor Feedback */}
+                <div className="flex items-center gap-3.5 py-1">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f3e8ff] text-[#7e22ce] shrink-0">
+                    <HeartHandshake className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-[#111827]">Counsellor Feedback</p>
+                    <p className="text-[11px] sm:text-xs text-[#6b7280]">Direct mentor channel · Voice &amp; text observation submissions</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-8 sm:mt-10 flex items-center justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-xl border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 px-6 py-2 text-sm font-semibold text-[#111827] transition-all cursor-pointer shadow-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Dedicated Counsellor Profile Card Layout (Matching provided design)
+  if (effectiveRole === "Counsellor") {
+    return (
+      <div
+        className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="counsellor-profile-title"
+      >
+        {/* Hidden File Input for Image Upload */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={handleImageFileChange}
+          className="hidden"
+        />
+
+        {/* Backdrop */}
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+          onClick={onClose}
+        />
+
+        {/* Counsellor Profile Card Container */}
+        <div className="relative z-10 w-full max-w-[620px] rounded-2xl bg-white p-6 sm:p-8 shadow-2xl border border-gray-100 font-sans animate-fade-in text-[#111827]">
+          {/* Close 'X' Button in Top Right */}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="absolute right-5 top-5 p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-lg cursor-pointer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
+          {/* Status Alerts */}
+          {successMessage && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-medium text-emerald-800 animate-fade-in">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-800 animate-fade-in">
+              <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Header Row */}
+          <div className="flex items-start gap-4 sm:gap-5 pr-8">
+            {/* Circular Avatar */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              title="Click to change photo"
+              className="group relative h-16 w-16 sm:h-[72px] sm:w-[72px] shrink-0 cursor-pointer overflow-hidden rounded-full border border-gray-200 bg-gray-100 shadow-sm transition-all hover:ring-2 hover:ring-purple-400"
+            >
+              <img
+                src={currentPhoto}
+                alt={currentFullName}
+                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              />
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                <Camera className="h-4 w-4 text-white" />
+              </div>
+              {uploadingPhoto && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <Loader2 className="h-5 w-5 animate-spin text-white" />
+                </div>
+              )}
+            </div>
+
+            {/* Identity Info */}
+            <div className="min-w-0 flex-1">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-[#f3e8ff] px-2.5 py-0.5 text-[11px] font-semibold text-[#7e22ce] uppercase tracking-wider mb-1">
+                <GraduationCap className="h-3 w-3 text-[#7e22ce]" />
+                <span>COUNSELLOR PROFILE</span>
+              </div>
+              <h2
+                id="counsellor-profile-title"
+                className="text-xl sm:text-2xl font-bold tracking-tight text-[#111827] leading-tight"
+              >
+                {currentFullName}
+              </h2>
+              <div className="mt-1 flex items-center flex-wrap gap-x-2 gap-y-1 text-xs sm:text-[13px] text-[#6b7280]">
+                <span className="inline-flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5 text-[#6b7280] shrink-0" />
+                  <span>{currentEmail}</span>
+                </span>
+                <span className="text-gray-300">|</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5 text-[#6b7280] shrink-0" />
+                  <span>{currentPhone}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Edit details button on top right */}
+            <div className="ml-auto self-center pl-2">
+              <button
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-purple-200 hover:border-purple-300 bg-white hover:bg-purple-50 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-[#7e22ce] transition-colors cursor-pointer shadow-sm"
+              >
+                <Edit3 className="h-4 w-4" />
+                <span>{isEditing ? "Cancel" : "Edit Details"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Edit Mode Form */}
+          {isEditing ? (
+            <form onSubmit={handleSaveProfile} className="mt-6 space-y-4 pt-4 border-t border-gray-100">
+              <div className="rounded-2xl border-2 border-dashed border-[#cbbfe6] bg-[#faf8fd] p-3.5 text-center">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs font-semibold text-[#3f2f7a] hover:underline cursor-pointer"
+                >
+                  Upload new picture from device
+                </button>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowUrlInput(!showUrlInput)}
+                    className="text-[11px] text-[#737373] hover:text-[#3f2f7a] underline cursor-pointer"
+                  >
+                    {showUrlInput ? "Hide image URL field" : "Or paste image URL"}
+                  </button>
+                </div>
+                {showUrlInput && (
+                  <input
+                    type="url"
+                    value={photoUrl}
+                    onChange={(e) => setPhotoUrl(e.target.value)}
+                    placeholder="https://example.com/avatar.jpg"
+                    className="mt-2 h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                  />
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#171717]">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Dr. Ananya Sharma"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-[#171717]">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+91 98230 11990"
+                  className="h-9 w-full rounded-xl border border-[#d8d5e6] bg-white px-3 text-xs sm:text-sm text-[#171717] outline-none focus:border-[#3f2f7a] focus:ring-2 focus:ring-[#efeaf9]"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#7c3aed] hover:bg-[#6d28d9] text-xs sm:text-sm font-semibold text-white transition-colors cursor-pointer disabled:opacity-60 shadow-sm"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5" /> Save Profile Details
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="h-9 rounded-xl border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 px-5 text-xs sm:text-sm font-semibold text-[#111827] transition-colors cursor-pointer shadow-sm"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            /* View Mode */
+            <>
+              {/* Divider Line */}
+              <div className="my-6 border-b border-gray-100" />
+
+              {/* Clinical & Mentorship Portfolio Header Row */}
+              <div className="flex items-center justify-between mb-3.5">
+                <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-[#111827] uppercase tracking-wider">
+                  <GraduationCap className="h-4 w-4 text-[#7e22ce]" />
+                  <span>CLINICAL &amp; MENTORSHIP PORTFOLIO</span>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" /> Certified Advisor
+                </span>
+              </div>
+
+              {/* Advisory Designation Row */}
+              <div className="my-3.5 border-b border-gray-100" />
+              <div className="flex items-baseline">
+                <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                  Advisory Designation
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-[#111827]">
+                  Certified Career Counsellor
+                </span>
+              </div>
+
+              {/* Counseling Room Row */}
+              <div className="my-3.5 border-b border-gray-100" />
+              <div className="flex items-baseline">
+                <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0">
+                  Counseling Room
+                </span>
+                <span className="text-xs sm:text-sm font-bold text-[#111827]">
+                  Pune Campus · Room 2B
+                </span>
+              </div>
+
+              {/* Specializations Row */}
+              <div className="my-3.5 border-b border-gray-100" />
+              <div className="flex items-start">
+                <span className="text-xs sm:text-sm text-[#6b7280] w-36 sm:w-44 shrink-0 pt-0.5">
+                  Specialization Domains
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Career Guidance", "Aptitude Assessment", "DAB-26 Psychometrics", "Cognitive Coaching"].map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-[#f3e8ff] px-2.5 py-0.5 text-[11px] font-semibold text-[#7e22ce] border border-[#e9d5ff]"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Operational Features */}
+              <div className="my-4 border-b border-gray-100" />
+              <div className="space-y-2">
+                {/* Student Cohorts */}
+                <div className="flex items-center gap-3.5 py-1">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f3e8ff] text-[#7e22ce] shrink-0">
+                    <Activity className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-[#111827]">Student Cohorts</p>
+                    <p className="text-[11px] sm:text-xs text-[#6b7280]">
+                      Mapped Student Dossiers · Daily check-ins &amp; action plan tracking
+                    </p>
+                  </div>
+                </div>
+
+                {/* Session Conclusions */}
+                <div className="flex items-center gap-3.5 py-1">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f3e8ff] text-[#7e22ce] shrink-0">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-bold text-[#111827]">Session Conclusions</p>
+                    <p className="text-[11px] sm:text-xs text-[#6b7280]">
+                      Published Recommendations · Synchronized to Student &amp; Parent portals
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="mt-8 sm:mt-10 flex items-center justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="rounded-xl border border-gray-300 hover:border-gray-400 bg-white hover:bg-gray-50 px-6 py-2 text-sm font-semibold text-[#111827] transition-all cursor-pointer shadow-sm"
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }

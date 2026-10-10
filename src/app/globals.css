@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
 @theme inline {
@@ -193,5 +194,412 @@ body {
     @media print {
       display: block !important;
     }
+  }
+}
+
+
+/* Print utilities for Persona AI result reports */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  .page-break {
+    page-break-after: always;
+    break-after: page;
+  }
+}
+
+.page-break {
+  break-after: page;
+}
+
+/* AI CMT reports - official stationery inspired by the Disha inquiry form */
+.ai-report-shell {
+  --report-purple: #3f2f7a;
+  --report-deep: #2c2159;
+  --report-red: #d91b1b;
+  --report-gold: #f4c76a;
+  --report-line: #c9c2e3;
+}
+
+.ai-report-page {
+  border: 1px solid var(--report-line);
+  border-radius: 20px;
+  box-shadow: 0 8px 28px rgba(63, 47, 122, 0.13);
+  isolation: isolate;
+}
+
+.ai-report-page::before {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 0;
+  height: 5px;
+  background: linear-gradient(90deg, var(--report-purple), var(--report-red) 52%, var(--report-gold));
+  content: "";
+}
+
+.ai-report-page::after {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 0;
+  height: 13px;
+  background: linear-gradient(90deg, #4a3c8f, #2c2159);
+  clip-path: polygon(0 40%, 22% 75%, 48% 30%, 74% 70%, 100% 34%, 100% 100%, 0 100%);
+  content: "";
+}
+
+.ai-report-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+.ai-report-letterhead {
+  margin: -2.5rem -2.5rem 0;
+  border-bottom: 1px solid #d8d5e6;
+  background: linear-gradient(100deg, #f0e9f8 0%, #ffffff 55%, #fff4e1 100%);
+  padding: 1.6rem 2.5rem 1.4rem;
+}
+
+.ai-report-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.ai-report-eyebrow {
+  color: var(--report-purple);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.ai-report-brand-name {
+  margin-top: 0.15rem;
+  color: var(--report-red);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.ai-report-brand-subtitle {
+  margin-top: 0.25rem;
+  color: #404040;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.ai-report-contact {
+  display: flex;
+  min-width: 10.5rem;
+  flex-direction: column;
+  align-items: flex-end;
+  color: #525252;
+  font-size: 0.64rem;
+  line-height: 1.55;
+  text-align: right;
+}
+
+.ai-report-contact strong {
+  color: var(--report-purple);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.8rem;
+}
+
+.ai-report-rule {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 1rem;
+  border-top: 2px solid var(--report-purple);
+  border-bottom: 2px solid var(--report-purple);
+  color: var(--report-purple);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.ai-report-rule span {
+  padding: 0.35rem 0.5rem;
+}
+
+.ai-report-rule span + span {
+  border-left: 1px solid var(--report-line);
+}
+
+.ai-report-title-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1rem 0 0.8rem;
+}
+
+.ai-report-kicker {
+  color: var(--report-red);
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.ai-report-title-row h1 {
+  margin-top: 0.12rem;
+  color: var(--report-deep);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.ai-report-title-row > div > p:last-child {
+  margin-top: 0.2rem;
+  color: #525252;
+  font-size: 0.7rem;
+}
+
+.ai-report-badge {
+  flex: 0 0 auto;
+  border: 2px solid var(--report-purple);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--report-purple);
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.45rem 0.75rem;
+  white-space: nowrap;
+}
+
+.ai-report-meta-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.7fr 1.4fr 1fr;
+  overflow: hidden;
+  border: 1px solid var(--report-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.ai-report-meta-grid > div {
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+}
+
+.ai-report-meta-grid > div + div {
+  border-left: 1px solid #e5e1ef;
+}
+
+.ai-report-meta-grid dt {
+  color: #737373;
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.ai-report-meta-grid dd {
+  overflow: hidden;
+  margin-top: 0.08rem;
+  color: #171717;
+  font-size: 0.67rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-report-continuation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 3px solid var(--report-purple);
+  border-bottom: 1px solid var(--report-line);
+  background: linear-gradient(90deg, #f0e9f8, #ffffff 62%, #fff4e1);
+  margin: -2.5rem -2.5rem 0;
+  padding: 0.7rem 2.5rem;
+  color: #525252;
+  font-size: 0.62rem;
+}
+
+.ai-report-continuation strong,
+.ai-report-continuation span {
+  display: block;
+}
+
+.ai-report-continuation strong {
+  color: var(--report-deep);
+  font-size: 0.72rem;
+}
+
+.ai-report-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid var(--report-line);
+  color: #737373;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.7rem 0 0.35rem;
+  text-transform: uppercase;
+}
+
+.ai-report-page h2 {
+  color: var(--report-deep);
+}
+
+.ai-report-section-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ai-report-section-flow > * {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+@media (max-width: 640px) {
+  .ai-report-letterhead,
+  .ai-report-continuation {
+    margin-left: -2rem;
+    margin-right: -2rem;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  .ai-report-brand-row,
+  .ai-report-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ai-report-contact {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .ai-report-meta-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .ai-report-meta-grid > div:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid #e5e1ef;
+  }
+
+  .ai-report-meta-grid > div:nth-child(4) {
+    border-top: 1px solid #e5e1ef;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  .ai-report-shell {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+  }
+
+  .ai-report-printing {
+    font-size: 13px;
+  }
+
+  .ai-report-printing .ai-report-print-hidden {
+    display: none !important;
+  }
+
+  .ai-report-printing .ai-report-print-ancestor {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .ai-report-printing .no-print {
+    display: none !important;
+  }
+
+  .ai-report-view {
+    width: 210mm !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .ai-report-page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto !important;
+    padding: 9mm 12mm 8mm !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    zoom: 1;
+  }
+
+  .ai-report-section-flow {
+    gap: 1.25rem;
+  }
+
+  /* Keep the two-page student report on exactly two A4 sheets. The first
+     page is intentionally denser, so its screen spacing is compacted only
+     for print instead of allowing the footer to spill onto a blank page. */
+  .ai-report-student-page {
+    box-sizing: border-box !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+  }
+
+  .ai-report-student-page .ai-report-section-flow {
+    margin-top: 4mm !important;
+    margin-bottom: 4mm !important;
+  }
+
+  .ai-report-student-page--first .ai-report-section-flow {
+    gap: 0.85rem !important;
+    margin-top: 3mm !important;
+    margin-bottom: 2mm !important;
+  }
+
+  .ai-report-student-page--first .ai-report-section-flow > :first-child {
+    padding: 1rem !important;
   }
 }

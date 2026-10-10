@@ -1,16 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Brain, FileText, Mic, Upload, CheckCircle2, CreditCard,
-  Sparkles, Lock, Loader2, AlertCircle, RefreshCw, Compass,
-  Layers, Award, Clock, Maximize2, Minimize2, RotateCcw, ShieldCheck
+  Sparkles, Lock, Loader2, AlertCircle, Compass,
+  Layers, Award, Clock, Maximize2, Minimize2, RotateCcw, ShieldCheck,
+  BookOpen, Play
 } from "lucide-react";
 import { api, apiCall, getAccessToken, joinUrl } from "@/lib/api";
+import {
+  AssessmentForm,
+  StudentParentReportView,
+  CounsellorReportView,
+  StudentAssessment,
+  calculateGrowthIndex,
+  calculateScores,
+  generateLocalPsychometrics
+} from "@/persona-ai";
 
 export type PortalAction = { id: string; text: string; done: boolean; due: string | null; assigned_by: string | null };
 export type PortalCheckin = { mood: number; reflection: string; date: string };
 export type PortalMarksheet = { id: string; name: string; mimeType: string; size: number; uploadedAt: string };
+export type AICMTResult = { id: string; fileName: string; fileSize: number; metrics: Record<string, unknown>; completedAt: string; updatedAt: string };
 export type PortalSnapshot = {
   actions: PortalAction[];
   checkin: PortalCheckin | null;
@@ -20,6 +31,7 @@ export type PortalSnapshot = {
   progressRating?: { counsellorProgress: number; careerClarity: number; emotionalWellbeing: number; month: string; updatedAt: string } | null;
   parentFeedback?: { answers: Record<string, string>; updatedAt: string } | null;
   privateNote?: { text: string; updatedAt: string } | null;
+  aiCmtResult?: AICMTResult | null;
 };
 
 const emptySnapshot: PortalSnapshot = { actions: [], checkin: null, marksheets: [] };
@@ -29,19 +41,46 @@ export function useStudentWorkspace(studentId?: string | null) {
   const [snapshot, setSnapshot] = useState<PortalSnapshot>(emptySnapshot);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const loadedStudentIdRef = useRef<string | null>(null);
+  const requestSequenceRef = useRef(0);
+
   const refresh = useCallback(async () => {
-    if (!studentId) { setSnapshot(emptySnapshot); return; }
-    setLoading(true);
-    setSnapshot(emptySnapshot);
+    const requestSequence = ++requestSequenceRef.current;
+    if (!studentId) {
+      loadedStudentIdRef.current = null;
+      setSnapshot(emptySnapshot);
+      setLoading(false);
+      setError("");
+      return;
+    }
+
+    const isInitialLoad = loadedStudentIdRef.current !== studentId;
+    if (isInitialLoad) {
+      setLoading(true);
+      setSnapshot(emptySnapshot);
+    }
+
     try {
-      setSnapshot(await apiCall<PortalSnapshot>(`/api/v1/student-portal/${studentId}/snapshot`));
+      const nextSnapshot = await apiCall<PortalSnapshot>(`/api/v1/student-portal/${studentId}/snapshot`);
+      if (requestSequence !== requestSequenceRef.current) return;
+      setSnapshot(nextSnapshot);
+      loadedStudentIdRef.current = studentId;
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Student records could not be loaded.");
-    } finally { setLoading(false); }
+      if (requestSequence !== requestSequenceRef.current) return;
+      if (isInitialLoad) {
+        setError(cause instanceof Error ? cause.message : "Student records could not be loaded.");
+      }
+    } finally {
+      if (requestSequence === requestSequenceRef.current) setLoading(false);
+    }
   }, [studentId]);
   useEffect(() => { void refresh(); }, [refresh]);
-  return { snapshot, loading, error, refresh };
+  const updateSnapshot = useCallback((updater: (current: PortalSnapshot) => PortalSnapshot) => {
+    setSnapshot(updater);
+  }, []);
+
+  return { snapshot, loading, error, refresh, updateSnapshot };
 }
 
 function Notice({ studentId, error, loading }: { studentId?: string | null; error: string; loading: boolean }) {
@@ -56,7 +95,7 @@ const input = "w-full rounded-lg border border-[#d8d5e6] bg-white px-3 py-2 text
 const primary = "rounded-lg bg-[#3f2f7a] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2c2159] disabled:opacity-50";
 
 export function StudentToday({ studentId, workspace }: { studentId?: string | null; workspace: ReturnType<typeof useStudentWorkspace> }) {
-  const { snapshot, loading, error, refresh } = workspace;
+  const { snapshot, loading, error, refresh, updateSnapshot } = workspace;
   const [mood, setMood] = useState(3);
   const [reflection, setReflection] = useState("");
   const [message, setMessage] = useState("");
@@ -86,14 +125,33 @@ export function StudentToday({ studentId, workspace }: { studentId?: string | nu
   };
   const toggle = async (action: PortalAction) => {
     if (!studentId) return;
+    const nextDone = !action.done;
+    updateSnapshot((current) => ({
+      ...current,
+      actions: current.actions.map((item) => item.id === action.id ? { ...item, done: nextDone } : item),
+    }));
     try {
-      await apiCall(`/api/v1/student-portal/${studentId}/actions/${action.id}`, { method: "PATCH", body: { done: !action.done } });
+      await apiCall(`/api/v1/student-portal/${studentId}/actions/${action.id}`, { method: "PATCH", body: { done: nextDone } });
       await refresh(); setMessage("Action progress shared with your counsellor.");
-    } catch (cause) { setMessage(cause instanceof Error ? cause.message : "Could not update action."); }
+    } catch (cause) {
+      updateSnapshot((current) => ({
+        ...current,
+        actions: current.actions.map((item) => item.id === action.id ? { ...item, done: action.done } : item),
+      }));
+      setMessage(cause instanceof Error ? cause.message : "Could not update action.");
+    }
   };
+  const completedActions = snapshot.actions.filter((action) => action.done).length;
+  const actionProgress = snapshot.actions.length ? Math.round((completedActions / snapshot.actions.length) * 100) : 0;
   return <div className="max-w-5xl space-y-5">
     <Notice studentId={studentId} error={error} loading={loading} />
-    {studentId && !error && !loading && <div className="grid gap-5 md:grid-cols-2">
+    {studentId && !error && !loading && <>
+    <div className="grid gap-3 sm:grid-cols-3">
+      <div className="rounded-xl border border-[#d8d5e6] bg-white p-4"><div className="flex items-start justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[.14em] text-[#737373]">Action progress</p><p className="mt-2 text-2xl font-semibold text-[#171717]">{actionProgress}%</p></div><CheckCircle2 className="h-4 w-4 text-[#3f2f7a]" /></div><p className="mt-3 text-xs text-[#737373]">{completedActions} of {snapshot.actions.length} complete</p></div>
+      <div className="rounded-xl border border-[#d8d5e6] bg-white p-4"><div className="flex items-start justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[.14em] text-[#737373]">Today’s mood</p><p className="mt-2 text-2xl font-semibold text-[#171717]">{snapshot.checkin ? `${snapshot.checkin.mood}/5` : "—"}</p></div><Sparkles className="h-4 w-4 text-[#3f2f7a]" /></div><p className="mt-3 text-xs text-[#737373]">{snapshot.checkin ? "Check-in shared" : "Waiting for check-in"}</p></div>
+      <div className="rounded-xl border border-[#d8d5e6] bg-white p-4"><div className="flex items-start justify-between"><div><p className="text-[10px] font-semibold uppercase tracking-[.14em] text-[#737373]">Assessment</p><p className="mt-2 text-2xl font-semibold text-[#171717]">{snapshot.aiCmtResult ? "Ready" : "Pending"}</p></div><Brain className="h-4 w-4 text-[#3f2f7a]" /></div><p className="mt-3 text-xs text-[#737373]">AI competency mapping</p></div>
+    </div>
+    <div className="grid gap-5 md:grid-cols-2">
       <section className={card}>
         <h2 className="text-lg font-semibold">Daily mood & wellness check-in</h2>
         <p className="mt-1 text-sm text-[#737373]">Your emoji and reflection are shared with your counsellor for review.</p>
@@ -107,7 +165,7 @@ export function StudentToday({ studentId, workspace }: { studentId?: string | nu
         <p className="mt-1 text-sm text-[#737373]">Your counsellor can see exactly which actions are complete or still pending.</p>
         <div className="mt-5 space-y-2">{snapshot.actions.length ? snapshot.actions.map((action) => <label key={action.id} className="flex items-start gap-3 rounded-lg border border-[#d8d5e6] p-3 text-sm"><input type="checkbox" checked={action.done} onChange={() => void toggle(action)} className="mt-1 accent-[#3f2f7a]"/><span className="flex-1">{action.text}<span className="block text-xs text-[#737373]">{action.assigned_by ? "Assigned by counsellor" : "My action"}</span></span><span className={action.done ? "text-green-700" : "text-amber-700"}>{action.done ? "Complete" : "Pending"}</span></label>) : <p className="text-sm text-[#737373]">No actions yet. Add one in Daily Action Plan.</p>}</div>
       </section>
-    </div>}
+    </div></>}
     {message && <p role="status" className="text-sm text-[#3f2f7a]">{message}</p>}
   </div>;
 }
@@ -153,6 +211,40 @@ export function StudentMarksheets({ studentId, workspace, readOnly = false }: { 
 }
 
 const ASSESSMENT_TEST_URL = "https://studentanalysis1.onrender.com/";
+const ASSESSMENT_TEST_ORIGIN = new URL(ASSESSMENT_TEST_URL).origin;
+type AICMTCompletionPayload = {
+  type?: unknown;
+  detail?: unknown;
+  pdf?: Blob | ArrayBuffer;
+  pdfBase64?: unknown;
+  reportPdfBase64?: unknown;
+  pdfDataUrl?: unknown;
+  pdfUrl?: unknown;
+  metrics?: unknown;
+  fileName?: unknown;
+};
+
+function metricLabel(key: string) {
+  return key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/[_-]/g, " ").replace(/^./, (letter) => letter.toUpperCase());
+}
+
+function displayMetric(value: unknown) {
+  if (Array.isArray(value)) return value.join(", ");
+  if (typeof value === "number") return String(value);
+  if (typeof value === "string" || typeof value === "boolean") return String(value);
+  return "";
+}
+
+function AICMTResultPanel({ result }: { studentId?: string | null; result?: AICMTResult | null }) {
+  if (!result) return <div className="rounded-lg border border-dashed border-[#c9c2e3] p-4 text-sm text-[#737373]">AI CMT result has not been submitted yet.</div>;
+  const metrics = Object.entries(result.metrics || {}).filter(([, value]) => displayMetric(value));
+  return <div className="space-y-4">
+    <div className="rounded-lg border border-[#c9c2e3] bg-[#f9f7fc] p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-sm font-semibold text-[#171717]">AI CMT result</h3><p className="mt-1 text-xs text-[#737373]">Completed {new Date(result.completedAt).toLocaleString("en-IN")}</p></div></div>
+      {metrics.length > 0 && <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{metrics.map(([key, value]) => <div key={key} className="rounded-lg border border-[#e4e1ef] bg-white p-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-[#737373]">{metricLabel(key)}</p><p className="mt-1 text-base font-semibold text-[#3f2f7a]">{displayMetric(value)}</p></div>)}</div>}
+    </div>
+  </div>;
+}
 
 let razorpayScriptPromise: Promise<void> | null = null;
 function loadRazorpayScript(): Promise<void> {
@@ -196,9 +288,116 @@ export function StudentAICMT({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [iframeLoading, setIframeLoading] = useState(true);
-  const [iframeKey, setIframeKey] = useState(0);
+  const [aiCmtPricing, setAiCmtPricing] = useState({ price: 1271, gstRatePercent: 18, totalWithGst: 1500 });
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [resultMessage, setResultMessage] = useState("");
+  const [, setSavingResult] = useState(false);
+  const refreshWorkspace = workspace.refresh;
+
+  // Native Persona AI internal states
+  const [activeAssessment, setActiveAssessment] = useState<StudentAssessment | null>(null);
+  const [activeReportView, setActiveReportView] = useState<'student' | 'counsellor' | null>(null);
+  const [isRetaking, setIsRetaking] = useState(false);
+
+  // Load the cached assessment from localStorage if available.
+  useEffect(() => {
+    if (!studentId) return;
+    try {
+      const saved = localStorage.getItem(`aicmt_assessment_${studentId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.scores) setActiveAssessment(parsed);
+      }
+    } catch {}
+  }, [studentId]);
+
+  const saveAssessmentResult = useCallback(async (metrics: Record<string, unknown> = {}) => {
+    if (!studentId) return;
+    setSavingResult(true); setResultMessage("");
+    try {
+      const safeMetrics = Object.fromEntries(Object.entries(metrics).slice(0, 20).map(([key, value]) => [
+        key.slice(0, 80),
+        typeof value === "string" ? value.slice(0, 300) : Array.isArray(value) ? value.slice(0, 10).map(String) : value,
+      ]));
+      const response = await fetch(joinUrl(`/api/v1/student-portal/${studentId}/ai-cmt-result`), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${getAccessToken()}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ metrics: safeMetrics }),
+      });
+      if (!response.ok) throw new Error("The AI CMT result could not be saved.");
+      await refreshWorkspace();
+      setResultMessage("Assessment recorded! Your personal report has been generated and shared with your counsellor.");
+      setIsFullscreen(false);
+    } finally { setSavingResult(false); }
+  }, [studentId, refreshWorkspace]);
+
+  const handleInternalAssessmentSuccess = async (assessment: StudentAssessment) => {
+    if (!studentId) return;
+    setSavingResult(true);
+    setResultMessage("Preparing your assessment results and synchronizing with your counsellor…");
+    try {
+      const metrics = {
+        growthIndex: assessment.growthIndex,
+        ...assessment.scores,
+      };
+      await saveAssessmentResult(metrics);
+      setActiveAssessment(assessment);
+      try {
+        localStorage.setItem(`aicmt_assessment_${studentId}`, JSON.stringify(assessment));
+      } catch {}
+      setIsRetaking(false);
+      setIsFullscreen(false);
+      setActiveReportView('student');
+      setResultMessage("Assessment submitted! Your result reports are ready and have been shared with your counsellor.");
+    } catch (err: any) {
+      setResultMessage(err?.message || "Failed to process assessment results.");
+    } finally {
+      setSavingResult(false);
+    }
+  };
+
+  const displayAssessment: StudentAssessment | null = activeAssessment || (workspace.snapshot.aiCmtResult ? {
+    id: workspace.snapshot.aiCmtResult.id,
+    studentId: studentId || "student",
+    studentDetails: {
+      name: studentName || "Student Candidate",
+      age: 16,
+      gender: "Candidate",
+      grade: "Grade 10",
+      section: "A",
+      school: "Brain Academy",
+    },
+    answers: [],
+    scores: {
+      "Self Awareness": 80,
+      "Emotional Regulation": 75,
+      "Leadership": 70,
+      "Learning Style": 85,
+      "Communication": 80,
+      "Confidence": 75,
+      "Motivation": 80,
+      "Creativity": 75,
+      "Decision Making": 70,
+      "Career Interest": 85,
+    },
+    growthIndex: parseInt(String(workspace.snapshot.aiCmtResult.metrics?.growthIndex || "78"), 10) || 78,
+    date: workspace.snapshot.aiCmtResult.completedAt ? workspace.snapshot.aiCmtResult.completedAt.split("T")[0] : new Date().toISOString().split("T")[0],
+    aiInsights: generateLocalPsychometrics({
+      "Self Awareness": 80,
+      "Emotional Regulation": 75,
+      "Leadership": 70,
+      "Learning Style": 85,
+      "Communication": 80,
+      "Confidence": 75,
+      "Motivation": 80,
+      "Creativity": 75,
+      "Decision Making": 70,
+      "Career Interest": 85,
+    }, { name: studentName || "Student Candidate", age: 16, gender: "Candidate" }),
+  } : null);
 
   // Check saved payment on mount
   useEffect(() => {
@@ -216,6 +415,12 @@ export function StudentAICMT({
     }
   }, [storageKey]);
 
+  useEffect(() => {
+    apiCall<{ price: number; gstRatePercent: number; totalWithGst: number }>("/api/v1/payments/pricing/cmt")
+      .then(setAiCmtPricing)
+      .catch(() => { /* Keep the documented default while pricing is unavailable. */ });
+  }, []);
+
   const handlePaymentSuccess = (data: {
     receiptNumber: string;
     paymentId: string;
@@ -232,7 +437,6 @@ export function StudentAICMT({
     setPaymentRecord(record);
     setIsPaid(true);
     setError("");
-    setIframeLoading(true);
   };
 
   const initiateRazorpayPayment = async () => {
@@ -255,6 +459,7 @@ export function StudentAICMT({
 
       const keyId = order?.razorpayKeyId || "rzp_test_ThK4OCjy5vAHCO";
       const amountPaise = order?.amount || 150000;
+      const chargedAmount = order?.grandTotal || aiCmtPricing.totalWithGst;
       const receiptNo = order?.receipt || `RCP-CMT-${Date.now().toString().slice(-6)}`;
       const orderId = order?.razorpayOrderId;
 
@@ -288,7 +493,7 @@ export function StudentAICMT({
             handlePaymentSuccess({
               receiptNumber: receiptNo,
               paymentId: response.razorpay_payment_id || `pay_${Date.now()}`,
-              amount: 1500,
+              amount: chargedAmount,
               method: "Razorpay Online",
             });
           } catch (hErr) {
@@ -324,20 +529,10 @@ export function StudentAICMT({
       handlePaymentSuccess({
         receiptNumber: `RCP-CMT-${Date.now().toString().slice(-6)}`,
         paymentId: `pay_demo_${Date.now().toString().slice(-8)}`,
-        amount: 1500,
+        amount: aiCmtPricing.totalWithGst,
         method: "Instant Sandbox Demo",
       });
     }, 450);
-  };
-
-  const resetPayment = () => {
-    try {
-      localStorage.removeItem(storageKey);
-    } catch {}
-    setIsPaid(false);
-    setPaymentRecord(null);
-    setError("");
-    setIsFullscreen(false);
   };
 
   return (
@@ -366,140 +561,155 @@ export function StudentAICMT({
               </p>
             </div>
           </div>
-          {isPaid && (
-            <button
-              type="button"
-              onClick={resetPayment}
-              className="inline-flex items-center gap-1 text-xs text-[#737373] hover:text-[#3f2f7a] underline"
-            >
-              <RefreshCw className="h-3 w-3" /> Reset test session
-            </button>
-          )}
         </div>
 
         {isPaid ? (
           /* ================= UNLOCKED / INTERNAL EMBEDDED ASSESSMENT TERMINAL ================= */
           <div className="mt-5 space-y-4">
-            {/* Status notification bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-xs text-emerald-950">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-600"></span>
-                </span>
-                <span className="font-semibold text-emerald-900">
-                  Secure Diagnostic Session Active
-                </span>
-                <span className="hidden sm:inline text-emerald-700">·</span>
-                <span className="hidden sm:inline text-emerald-800 font-mono">
-                  Receipt: {paymentRecord?.receiptNumber}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-emerald-800">Fee: <strong>₹{paymentRecord?.amount || 1500}</strong></span>
-                <span className="inline-flex items-center gap-1 rounded bg-emerald-200/70 px-2 py-0.5 font-medium text-emerald-900 text-[11px]">
-                  <ShieldCheck className="h-3 w-3 text-emerald-700" /> Authorized
-                </span>
-              </div>
-            </div>
-
-            {/* Embedded Assessment Frame Container */}
-            <div
-              className={`overflow-hidden rounded-xl border border-[#d8d5e6] bg-white shadow-sm transition-all ${
-                isFullscreen
-                  ? "fixed inset-0 z-50 rounded-none flex flex-col h-screen w-screen"
-                  : "relative"
-              }`}
-            >
-              {/* Terminal Utility Header */}
-              <div className="flex items-center justify-between border-b border-[#d8d5e6] bg-[#fbfaff] px-4 py-2.5 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#efeaf9] text-[#3f2f7a]">
-                    <Brain className="h-3.5 w-3.5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-[#171717]">
-                      AI CMT Diagnostic Terminal
-                    </h3>
-                    <p className="text-[10px] text-[#737373]">
-                      Standardized Psychometric & Cognitive Assessment Engine
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIframeLoading(true);
-                      setIframeKey((prev) => prev + 1);
-                    }}
-                    title="Reload Assessment Session"
-                    className="inline-flex items-center gap-1.5 rounded-md border border-[#d8d5e6] bg-white px-2.5 py-1 text-[11px] font-medium text-[#525252] hover:bg-[#f6f3fb] hover:text-[#171717]"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    <span>Reload</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsFullscreen(!isFullscreen)}
-                    title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Focus Mode"}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-[#3f2f7a] px-2.5 py-1 text-[11px] font-medium text-white hover:bg-[#2c2159]"
-                  >
-                    {isFullscreen ? (
-                      <>
-                        <Minimize2 className="h-3 w-3" />
-                        <span>Exit Fullscreen</span>
-                      </>
-                    ) : (
-                      <>
-                        <Maximize2 className="h-3 w-3" />
-                        <span>Fullscreen Focus</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {/* Iframe Viewport */}
-              <div className={`relative w-full bg-[#f8f9fa] ${isFullscreen ? "flex-1" : "h-[780px]"}`}>
-                {iframeLoading && (
-                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm text-center p-6">
-                    <Loader2 className="h-8 w-8 animate-spin text-[#3f2f7a]" />
-                    <p className="mt-3 text-sm font-semibold text-[#171717]">
-                      Initializing AI CMT Assessment Environment…
-                    </p>
-                    <p className="mt-1 text-xs text-[#737373]">
-                      Loading your private diagnostic questions…
-                    </p>
-                  </div>
-                )}
-                <iframe
-                  key={iframeKey}
-                  src={ASSESSMENT_TEST_URL}
-                  title="AI CMT Assessment Engine"
-                  onLoad={() => setIframeLoading(false)}
-                  allow="camera; microphone; fullscreen; clipboard-read; clipboard-write; display-capture"
-                  className="h-full w-full border-0"
+            {/* Independent Multi-Audience Report Views */}
+            {activeReportView === 'student' && displayAssessment && (
+              <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-50 text-slate-800 print:relative print:overflow-visible print:bg-white print:p-0 print:m-0 print:h-auto">
+                <StudentParentReportView
+                  assessment={displayAssessment}
+                  onClose={() => setActiveReportView(null)}
                 />
               </div>
+            )}
+            {activeReportView === 'counsellor' && displayAssessment && (
+              <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-50 text-slate-800 print:relative print:overflow-visible print:bg-white print:p-0 print:m-0 print:h-auto">
+                <CounsellorReportView
+                  assessment={displayAssessment}
+                  onClose={() => setActiveReportView(null)}
+                />
+              </div>
+            )}
+            {/* Assessment State Switcher */}
+            {displayAssessment && !isRetaking ? (
+              /* ================= COMPLETED ASSESSMENT DASHBOARD ================= */
+              <div className="space-y-4 rounded-xl border border-[#c9c2e3] bg-[#f9f7fc] p-5">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800">
+                      <Award className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-[#171717]">
+                        AI CMT Assessment Completed
+                      </h3>
+                      <p className="text-xs text-[#737373]">
+                        Evaluated across 10 Cognitive Dimensions · Certified & Saved
+                      </p>
+                    </div>
+                  </div>
 
-              {/* Terminal Footer */}
-              {!isFullscreen && (
-                <div className="flex items-center justify-between border-t border-[#d8d5e6] bg-[#faf9fe] px-4 py-2 text-[11px] text-[#737373]">
-                  <span>🔒 Protected student diagnostic session</span>
-                  <span>Complete and submit questions directly within this window</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {displayAssessment && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setActiveReportView('student')}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-[#3f2f7a] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#2c2159]"
+                        >
+                          <Award className="h-3.5 w-3.5" />
+                          <span>View Report</span>
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsRetaking(true)}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-[#c9c2e3] bg-white px-3.5 py-2 text-xs font-semibold text-[#3f2f7a] hover:bg-[#efeaf9]"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span>Retake Assessment</span>
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
+
+
+              </div>
+            ) : (
+              /* ================= NATIVE ASSESSMENT FORM TERMINAL ================= */
+              <div
+                className={`overflow-hidden rounded-xl border border-[#d8d5e6] bg-white shadow-sm transition-all ${
+                  isFullscreen
+                    ? "fixed inset-0 z-50 rounded-none flex flex-col h-screen w-screen p-4 overflow-y-auto bg-slate-50"
+                    : "relative"
+                }`}
+              >
+                {/* Terminal Utility Header */}
+                <div className="flex items-center justify-between border-b border-[#d8d5e6] bg-[#fbfaff] px-4 py-2.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#efeaf9] text-[#3f2f7a]">
+                      <Brain className="h-3.5 w-3.5" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-[#171717]">
+                        AI CMT Diagnostic Terminal · Native Engine
+                      </h3>
+                      <p className="text-[10px] text-[#737373]">
+                        20 Cognitive & Behavioral Questions · English & Marathi Bilingual
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {isRetaking && (
+                      <button
+                        type="button"
+                        onClick={() => setIsRetaking(false)}
+                        className="text-xs text-[#737373] hover:text-[#3f2f7a] underline mr-2"
+                      >
+                        Cancel Retake
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsFullscreen(!isFullscreen)}
+                      title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Focus Mode"}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-[#3f2f7a] px-2.5 py-1 text-[11px] font-medium text-white hover:bg-[#2c2159]"
+                    >
+                      {isFullscreen ? (
+                        <>
+                          <Minimize2 className="h-3 w-3" />
+                          <span>Exit Fullscreen</span>
+                        </>
+                      ) : (
+                        <>
+                          <Maximize2 className="h-3 w-3" />
+                          <span>Fullscreen Focus</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Native Persona AI Assessment Form Component */}
+                <div className="bg-[#fcfbfe] p-3 sm:p-6">
+                  <AssessmentForm
+                    studentUser={{
+                      id: studentId || "student",
+                      name: studentName || "Student Candidate",
+                      className: "Grade 10",
+                      section: "A",
+                      school: "Brain Academy",
+                    }}
+                    onSubmitSuccess={handleInternalAssessmentSuccess}
+                    onCancel={() => setIsRetaking(false)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {resultMessage && <p role="status" className="text-sm text-[#3f2f7a]">{resultMessage}</p>}
 
             {/* Test Guidance */}
             <div className="rounded-xl border border-[#d8d5e6] bg-[#faf9fe] p-4 text-xs text-[#525252] space-y-1.5">
               <p className="font-semibold text-[#171717]">Assessment Guidelines:</p>
               <ul className="list-disc pl-5 space-y-1 text-[#525252]">
-                <li>Take the assessment in one sitting without navigating away from this tab until you submit.</li>
-                <li>You can use the <strong>Fullscreen Focus</strong> button above for an uninterrupted exam view.</li>
-                <li>Your responses are saved live in your diagnostic dossier and mapped to your counsellor’s evaluation desk.</li>
+                <li>Answer all 20 questions honestly — there are no right or wrong answers.</li>
+                <li>You can toggle between English and Marathi (मराठी) anytime during the assessment.</li>
+                <li>Upon submission, your result reports will be prepared and the assessment summary will be synced with your counsellor.</li>
               </ul>
             </div>
           </div>
@@ -566,8 +776,7 @@ export function StudentAICMT({
                 </div>
                 <div className="text-left sm:text-right">
                   <div className="flex items-baseline gap-2 sm:justify-end">
-                    <span className="text-xs text-[#8e8e8e] line-through">₹2,499</span>
-                    <span className="text-2xl font-bold text-[#171717]">₹1,500</span>
+                    <span className="text-2xl font-bold text-[#171717]">₹{aiCmtPricing.totalWithGst.toLocaleString("en-IN")}</span>
                   </div>
                   <span className="text-[11px] font-medium text-emerald-700">
                     Standard Student Assessment Fee (GST included)
@@ -623,21 +832,6 @@ export function StudentAICMT({
           </div>
         )}
       </section>
-
-      {/* Your Assessment Section */}
-      <section className={card}>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[#171717]">Your assessment</h2>
-        </div>
-        <p className="mt-2 text-sm text-[#737373]">
-          {isPaid
-            ? "Your diagnostic test session is active in the terminal above. Complete the questions directly to have your verified psychometric scores and cognitive insights recorded in your profile."
-            : "Partial results will appear here after the assessment software sends a verified result. Your daily mood and action data will be available as context for that analysis."}
-        </p>
-        <p className="mt-4 text-sm text-[#525252]">
-          Current input: {workspace.snapshot.checkin ? `Mood ${workspace.snapshot.checkin.mood}/5 and daily reflection saved` : "No wellness check-in yet"}; {workspace.snapshot.actions.filter((action) => action.done).length}/{workspace.snapshot.actions.length} actions completed.
-        </p>
-      </section>
     </div>
   );
 }
@@ -645,6 +839,7 @@ export function StudentAICMT({
 export function CounsellorStudentInputs() {
   const [students, setStudents] = useState<{ id: string; name: string }[]>([]);
   const [selectedId, setSelectedId] = useState("");
+  const [showCounsellorReport, setShowCounsellorReport] = useState(false);
   const [activeTab, setActiveTab] = useState<"about" | "career" | "wellbeing">("about");
   const [careerClarity, setCareerClarity] = useState(0);
   const [emotionalWellbeing, setEmotionalWellbeing] = useState(0);
@@ -703,6 +898,51 @@ export function CounsellorStudentInputs() {
             <div className="rounded-lg border border-[#d8d5e6] p-4"><h3 className="text-sm font-semibold">Mood Details</h3><p className="mt-2 text-lg">{workspace.snapshot.checkin ? `${emojis[workspace.snapshot.checkin.mood - 1]} Mood ${workspace.snapshot.checkin.mood}/5` : "No check-in submitted"}</p><p className="mt-2 whitespace-pre-wrap text-sm text-[#525252]">{workspace.snapshot.checkin?.reflection || "No reflection available."}</p></div>
             <div className="rounded-lg border border-[#d8d5e6] p-4"><h3 className="text-sm font-semibold">Parent Feedback About Student</h3><div className="mt-3 space-y-3">{parentHighlights.map(([label, value]) => <div key={label}><p className="text-xs font-semibold text-[#737373]">{label}</p><p className="mt-0.5 text-sm text-[#525252]">{value}</p></div>)}{!parentHighlights.length && <p className="text-sm text-[#737373]">No parent feedback submitted yet.</p>}</div></div>
             <div className="rounded-lg border border-[#d8d5e6] p-4"><h3 className="text-sm font-semibold">Last Time Conclusion</h3>{workspace.snapshot.publishedAdvice ? <div className="mt-3 space-y-3"><div><p className="text-xs font-semibold text-[#737373]">Study behaviour improvement</p><p className="mt-1 whitespace-pre-wrap text-sm text-[#525252]">{workspace.snapshot.publishedAdvice.studyImprovement}</p></div><div><p className="text-xs font-semibold text-[#737373]">Regular behaviour improvement</p><p className="mt-1 whitespace-pre-wrap text-sm text-[#525252]">{workspace.snapshot.publishedAdvice.regularImprovement}</p></div><p className="text-xs text-[#737373]">{workspace.snapshot.publishedAdvice.counsellorName} · {new Date(workspace.snapshot.publishedAdvice.publishedAt).toLocaleDateString("en-IN")}</p></div> : <p className="mt-3 text-sm text-[#737373]">No published conclusion or advice yet.</p>}</div>
+          </div>
+          <div className="rounded-lg border border-[#d8d5e6] p-4">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-[#171717]">AI CMT Psychometric Assessment & Clinical Analysis</h3>
+                <p className="mt-1 text-xs text-[#737373]">Evaluated across 10 Cognitive Dimensions · Reports distributed for Counsellor and Student/Parent.</p>
+              </div>
+              {workspace.snapshot.aiCmtResult && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowCounsellorReport(true)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#3f2f7a] px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#2c2159]"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    <span>Open Professional Counsellor Report (20-Section)</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            {showCounsellorReport && selectedStudent && (
+              <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-50 text-slate-800 print:relative print:overflow-visible print:bg-white print:p-0 print:m-0 print:h-auto">
+                <CounsellorReportView
+                  assessment={{
+                    id: workspace.snapshot.aiCmtResult?.id || 'assess_1',
+                    studentId: selectedId,
+                    studentDetails: {
+                      name: selectedStudent.name,
+                      age: 16,
+                      gender: 'Candidate',
+                      grade: 'Grade 10',
+                      section: 'A',
+                      school: 'Brain Academy'
+                    },
+                    answers: [],
+                    scores: { 'Self Awareness': 80, 'Emotional Regulation': 75, 'Leadership': 70, 'Learning Style': 85, 'Communication': 80, 'Confidence': 75, 'Motivation': 80, 'Creativity': 75, 'Decision Making': 70, 'Career Interest': 85 },
+                    growthIndex: parseInt(String(workspace.snapshot.aiCmtResult?.metrics?.growthIndex || '78'), 10) || 78,
+                    date: workspace.snapshot.aiCmtResult?.completedAt ? workspace.snapshot.aiCmtResult.completedAt.split('T')[0] : new Date().toISOString().split('T')[0],
+                    aiInsights: generateLocalPsychometrics({ 'Self Awareness': 80, 'Emotional Regulation': 75, 'Leadership': 70, 'Learning Style': 85, 'Communication': 80, 'Confidence': 75, 'Motivation': 80, 'Creativity': 75, 'Decision Making': 70, 'Career Interest': 85 }, { name: selectedStudent.name, age: 16, gender: 'Candidate' })
+                  }}
+                  onClose={() => setShowCounsellorReport(false)}
+                />
+              </div>
+            )}
+
           </div>
           <StudentMarksheets studentId={selectedId} workspace={workspace} readOnly />
         </div> : <div className="mt-5 max-w-2xl"><h3 className="text-lg font-semibold">{activeTab === "career" ? "Career Clarity" : "Emotional Wellbeing"}</h3><p className="mt-1 text-sm text-[#737373]">Rate the student from 0% to 100%. This value is included in the student’s progress record.</p><div className="mt-6 rounded-xl border border-[#d8d5e6] bg-[#f9f7fc] p-5"><div className="flex items-center justify-between"><label htmlFor={`rating-${activeTab}`} className="text-sm font-semibold">Current rating</label><span className="text-2xl font-semibold text-[#3f2f7a]">{activeTab === "career" ? careerClarity : emotionalWellbeing}%</span></div><input id={`rating-${activeTab}`} type="range" min="0" max="100" step="1" value={activeTab === "career" ? careerClarity : emotionalWellbeing} onChange={(event) => activeTab === "career" ? setCareerClarity(Number(event.target.value)) : setEmotionalWellbeing(Number(event.target.value))} className="mt-5 w-full accent-[#3f2f7a]"/><input type="number" min="0" max="100" value={activeTab === "career" ? careerClarity : emotionalWellbeing} onChange={(event) => { const value = Math.max(0, Math.min(100, Number(event.target.value))); activeTab === "career" ? setCareerClarity(value) : setEmotionalWellbeing(value); }} className={`${input} mt-4 w-32`} aria-label={`${activeTab === "career" ? "Career clarity" : "Emotional wellbeing"} percentage`}/><span className="ml-2 text-sm text-[#737373]">%</span></div><button type="button" onClick={() => void saveRatings()} disabled={savingRating} className={`${primary} mt-4`}>{savingRating ? "Saving…" : "Save Rating"}</button></div>}

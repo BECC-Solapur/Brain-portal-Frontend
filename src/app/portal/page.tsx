@@ -95,6 +95,7 @@ type SidebarSection =
   | "feedback"
   | "parent-form"
   | "documents"
+  | "pricing"
   | "settings";
 type Todo = { id: number; text: string; done: boolean; due: string };
 
@@ -148,12 +149,7 @@ const billingTransactions = [
   { id: "INV-2026-086", studentId: "BR-24096", studentName: "Ishani Mehra", program: "Phoenix (Graduates)", amount: 5999, gst: 1080, razorpayId: "—", date: "15 Aug 2026", status: "Pending", method: "Invoice Dispatched" },
 ];
 
-const initialFollowups = [
-  { id: 1, studentId: "BR-24091", studentName: "Aarav Kulkarni", program: "Lakshya", counsellor: "Unassigned", type: "Weekly Progress Review", dueDate: "Today", status: "Due", note: "Review science stream aptitude test results." },
-  { id: 2, studentId: "BR-24092", studentName: "Siya Patil", program: "Palavi", counsellor: "Unassigned", type: "Intake Verification", dueDate: "Tomorrow", status: "Upcoming", note: "Verify pending registration fee and schedule diagnostic slot." },
-  { id: 3, studentId: "BR-24096", studentName: "Ishani Mehra", program: "Phoenix", counsellor: "Unassigned", type: "Intake Follow-up", dueDate: "24 Aug", status: "Upcoming", note: "Candidate requested call back regarding career transition module." },
-  { id: 4, studentId: "BR-24094", studentName: "Anaya Deshmukh", program: "Ankur", counsellor: "Unassigned", type: "Parent Alignment", dueDate: "Yesterday", status: "Overdue", note: "Discuss foundational learning style assessment outcomes." },
-];
+const initialFollowups: Array<{ id: string; studentId: string; studentName: string; program: string; counsellor: string; type: string; dueDate: string; status: string; note: string; actionable: boolean }> = [];
 
 const sessionsList = [
   { id: "SES-101", studentName: "Aarav Kulkarni", program: "Lakshya", counsellor: "Unassigned", date: "Today", time: "4:00 PM – 4:45 PM", mode: "In-Person", location: "Pune Campus · Room 2B", status: "Confirmed" },
@@ -183,24 +179,23 @@ function StatCard({
   highlight?: boolean;
 }) {
   return (
-    <div className="p-4 rounded-[12px] bg-white border border-[#d8d5e6] flex flex-col justify-between">
+    <div className={`group flex min-h-32 flex-col justify-between rounded-[14px] border p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#93b4f5] hover:shadow-md ${highlight ? "border-[#bfd0f7] bg-[linear-gradient(145deg,#f4f7ff_0%,#ffffff_72%)]" : "border-[#dde2eb] bg-white"}`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[10px] uppercase font-semibold tracking-wider text-[#737373]">{label}</p>
-          <p className="mt-1 text-2xl font-semibold text-[#171717]">{value}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#737987]">{label}</p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight text-[#14171f]">{value}</p>
         </div>
-        <div className={`p-2 rounded-[8px] border ${highlight ? "bg-[#efeaf9] text-[#3f2f7a] border-[#c9c2e3]" : "bg-[#f6f3fb] text-[#525252] border-[#d8d5e6]"}`}>
+        <div className={`rounded-[9px] border p-2.5 ${highlight ? "border-[#bfd0f7] bg-[#eaf1ff] text-[#2563eb]" : "border-[#dde2eb] bg-[#f7f8fa] text-[#697181]"}`}>
           <Icon className="w-4 h-4" />
         </div>
       </div>
-      <p className="mt-3 text-xs text-[#737373]">{hint}</p>
+      <p className="mt-4 text-xs leading-5 text-[#737987]">{hint}</p>
     </div>
   );
 }
 
 function SectionPanel({
   title,
-  subtitle,
   children,
   action,
 }: {
@@ -210,15 +205,12 @@ function SectionPanel({
   action?: React.ReactNode;
 }) {
   return (
-    <section className="rounded-[12px] border border-[#d8d5e6] bg-white">
-      <div className="flex items-center justify-between border-b border-[#d8d5e6] px-4 py-3">
-        <div>
-          <h2 className="text-sm font-semibold text-[#171717]">{title}</h2>
-          {subtitle && <p className="text-[11px] text-[#737373] mt-0.5">{subtitle}</p>}
-        </div>
+    <section className="overflow-hidden rounded-[14px] border border-[#dde2eb] bg-white shadow-[0_12px_32px_rgba(31,41,55,0.06)]">
+      <div className="flex items-center justify-between border-b border-[#e8ebf0] px-5 py-4">
+        <h2 className="text-sm font-semibold text-[#14171f]">{title}</h2>
         {action}
       </div>
-      <div className="p-4">{children}</div>
+      <div className="p-5">{children}</div>
     </section>
   );
 }
@@ -287,6 +279,7 @@ export default function PortalPage() {
         { key: "billing" as SidebarSection, icon: CreditCard, label: "Invoices" },
         { key: "sessions" as SidebarSection, icon: CalendarDays, label: "Open Slots" },
         { key: "followups" as SidebarSection, icon: Bell, label: "Follow-up Reminders" },
+        { key: "pricing" as SidebarSection, icon: IndianRupee, label: "Pricing" },
       ];
     }
     if (role === "Parent") {
@@ -321,18 +314,18 @@ export default function PortalPage() {
   // identity has hydrated. The previous "Brain Admin" fallback briefly mounted
   // its effects for counsellor logins and generated forbidden admin requests.
   if (!isHydrated) {
-    return <div className="min-h-screen bg-[#e9eaf1]" aria-label="Loading portal" />;
+    return <div className="min-h-screen bg-[#f3f5f9]" aria-label="Loading portal" />;
   }
 
   return (
-    <div className="min-h-screen bg-[#e9eaf1] text-[#171717]">
+    <div className="portal-dashboard min-h-screen bg-[#f3f5f9] text-[#171717]">
       {/* Top Bar */}
-      <header className="sticky top-0 z-30 border-b border-[#d8d5e6] bg-white/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-30 border-b border-[#dde2eb] bg-white/95 backdrop-blur-xl">
         <div className="flex h-14 w-full items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileNavOpen(!mobileNavOpen)}
-              className="p-1.5 rounded-[6px] border border-[#d8d5e6] text-[#525252] lg:hidden hover:bg-[#f6f3fb]"
+              className="rounded-[7px] border border-[#dde2eb] p-1.5 text-[#697181] hover:bg-[#f4f6fa] lg:hidden"
               aria-label="Toggle navigation"
             >
               {mobileNavOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
@@ -340,14 +333,14 @@ export default function PortalPage() {
 
             <div className="flex items-center gap-2.5">
               <Image src="/brain-logo.svg" alt="BRAIN logo" width={28} height={28} className="h-7 w-7 object-contain" priority />
-              <span className="font-semibold text-sm text-[#171717]">
-                BRAIN <span className="text-[#737373] font-normal">{role === "Brain Admin" ? "Admin" : role} Workspace</span>
+              <span className="text-sm font-semibold tracking-[0.08em] text-[#14171f]">
+                BRAIN <span className="font-normal tracking-normal text-[#737987]">/ {role === "Brain Admin" ? "Admin" : role}</span>
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <button aria-label="Notifications" className="p-2 rounded-[6px] border border-[#d8d5e6] hover:bg-[#f6f3fb] text-[#525252]">
+            <button aria-label="Notifications" className="rounded-[7px] border border-[#dde2eb] p-2 text-[#697181] hover:bg-[#f4f6fa] hover:text-[#14171f]">
               <Bell className="h-4 w-4" />
             </button>
 
@@ -358,9 +351,9 @@ export default function PortalPage() {
                 id="portal-profile-button"
                 onClick={() => setProfileModalOpen(true)}
                 title={`Click to view ${role} profile`}
-                className="group flex items-center gap-2.5 rounded-[8px] border border-[#d8d5e6] bg-white px-2.5 py-1.5 text-left transition-all hover:border-[#3f2f7a] hover:bg-[#faf8fd] hover:shadow-sm cursor-pointer"
+                className="group flex cursor-pointer items-center gap-2.5 rounded-[8px] border border-[#dde2eb] bg-white px-2.5 py-1.5 text-left transition-all hover:border-[#93b4f5] hover:bg-[#f8faff]"
               >
-                <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full border border-[#d8d5e6] bg-[#f6f3fb]">
+                <div className="relative h-6 w-6 shrink-0 overflow-hidden rounded-full border border-[#dde2eb] bg-[#f4f6fa]">
                   <img
                     src={userPhoto}
                     alt={displayName}
@@ -368,7 +361,7 @@ export default function PortalPage() {
                     className="h-full w-full object-cover transition-transform group-hover:scale-110"
                   />
                 </div>
-                <div className="text-xs font-medium text-[#171717] flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-[#14171f]">
                   <span>{displayName}</span>
                 </div>
               </button>
@@ -378,14 +371,14 @@ export default function PortalPage() {
                   type="button"
                   onClick={() => setRoleOpen(!roleOpen)}
                   title="Switch Role Preview"
-                  className="ml-1 p-1 rounded-md text-[#737373] hover:text-[#171717] hover:bg-[#f6f3fb]"
+                  className="ml-1 rounded-md p-1 text-[#737987] hover:bg-[#f4f6fa] hover:text-[#14171f]"
                 >
                   <ChevronDown className="h-3.5 w-3.5" />
                 </button>
               )}
 
               {roleOpen && !authenticatedRole && (
-                <div className="absolute right-0 top-full mt-1.5 w-60 rounded-[10px] border border-[#d8d5e6] bg-white p-1 shadow-lg z-50 animate-fade-in">
+                <div className="absolute right-0 top-full z-50 mt-1.5 w-60 animate-fade-in rounded-[10px] border border-[#dde2eb] bg-white p-1 shadow-2xl">
                   {roles.map((item) => (
                     <button
                       key={item.name}
@@ -395,13 +388,13 @@ export default function PortalPage() {
                         setRoleOpen(false);
                       }}
                       className={`flex w-full items-start gap-2 rounded-[6px] px-2.5 py-2 text-left text-xs transition-colors ${
-                        role === item.name ? "bg-[#f6f3fb] font-semibold text-[#171717]" : "hover:bg-[#f6f3fb] text-[#525252]"
+                        role === item.name ? "bg-[#eaf1ff] font-semibold text-[#1d4ed8]" : "text-[#697181] hover:bg-[#f4f6fa]"
                       }`}
                     >
-                      <ShieldCheck className="h-3.5 w-3.5 text-[#3f2f7a] mt-0.5" />
+                      <ShieldCheck className="mt-0.5 h-3.5 w-3.5 text-[#2563eb]" />
                       <div>
                         <span className="block">{item.name}</span>
-                        <span className="block text-[10px] text-[#737373] font-normal">{item.note}</span>
+                        <span className="block text-[10px] font-normal text-[#737987]">{item.note}</span>
                       </div>
                     </button>
                   ))}
@@ -412,7 +405,7 @@ export default function PortalPage() {
         </div>
 
         {/* Mobile Horizontal Quick Tab Bar */}
-        <div className="flex lg:hidden overflow-x-auto border-t border-[#d8d5e6] px-4 py-2 gap-1.5 bg-[#f6f3fb]">
+        <div className="flex gap-1.5 overflow-x-auto border-t border-[#e8ebf0] bg-[#f8f9fb] px-4 py-2 lg:hidden">
           {navItems.map(({ key, label }) => {
             const isActive = activeSection === key;
             return (
@@ -425,8 +418,8 @@ export default function PortalPage() {
                 }}
                 className={`px-3 py-1 text-xs rounded-full whitespace-nowrap border transition-colors ${
                   isActive
-                    ? "bg-[#3f2f7a] text-white border-[#3f2f7a] font-medium"
-                    : "bg-white text-[#525252] border-[#d8d5e6] hover:bg-[#f6f3fb]"
+                    ? "border-[#2563eb] bg-[#2563eb] font-medium text-white"
+                    : "border-[#dde2eb] bg-white text-[#697181] hover:bg-[#f4f6fa]"
                 }`}
               >
                 {label}
@@ -442,10 +435,10 @@ export default function PortalPage() {
         <aside
           className={`${
             mobileNavOpen ? "fixed inset-y-14 left-0 z-40 w-64 shadow-2xl" : "hidden"
-          } lg:flex lg:static min-h-[calc(100vh-3.5rem)] w-56 shrink-0 border-r border-[#d8d5e6] bg-white p-3 flex-col`}
+          } flex-col border-r border-[#dde2eb] bg-white p-3 lg:sticky lg:top-14 lg:flex lg:h-[calc(100vh-3.5rem)] lg:w-60 lg:shrink-0`}
         >
-          <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-wider text-[#737373]">
-            Navigation
+          <p className="mb-3 px-2 pt-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-[#9298a5]">
+            Workspace
           </p>
 
           <div className="space-y-0.5">
@@ -461,8 +454,8 @@ export default function PortalPage() {
                   }}
                   className={`flex w-full items-center gap-2.5 rounded-[8px] px-3 py-2 text-xs font-medium transition-colors cursor-pointer ${
                     isActive
-                      ? "bg-[#efeaf9] text-[#3f2f7a]"
-                      : "text-[#525252] hover:bg-[#f6f3fb] hover:text-[#171717]"
+                      ? "border border-[#bfd0f7] bg-[#eaf1ff] text-[#1d4ed8] shadow-[inset_3px_0_0_#2563eb]"
+                      : "border border-transparent text-[#697181] hover:bg-[#f4f6fa] hover:text-[#14171f]"
                   }`}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
@@ -478,7 +471,7 @@ export default function PortalPage() {
               await logout();
               router.replace("/");
             }}
-            className="mt-auto flex items-center gap-2 rounded-[8px] px-3 py-2 text-xs font-medium text-[#737373] hover:bg-[#f6f3fb] hover:text-[#171717]"
+            className="mt-auto flex items-center gap-2 rounded-[8px] px-3 py-2 text-xs font-medium text-[#737987] hover:bg-[#f4f6fa] hover:text-[#14171f]"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span>Sign Out</span>
@@ -486,15 +479,10 @@ export default function PortalPage() {
         </aside>
 
         {/* Content Area */}
-        <main className="min-w-0 flex-1 p-4 sm:p-6">
-          {!(activeSection === "overview" && role === "SuperAdmin") && <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center border-b border-[#d8d5e6] pb-4">
+        <main className="min-w-0 flex-1 overflow-hidden p-4 sm:p-6 lg:p-8">
+          <div className="mb-7 flex flex-col justify-between gap-4 border-b border-[#dde2eb] pb-5 sm:flex-row sm:items-end">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-[#3f2f7a] capitalize">{activeSection}</span>
-                <span className="text-[#737373]">·</span>
-                <span className="text-xs text-[#737373]">{role}</span>
-              </div>
-              <h1 className="text-xl font-semibold text-[#171717] mt-0.5">
+              <h1 className="text-2xl font-semibold tracking-tight text-[#14171f]">
                 {activeSection === "overview" && (role === "Student" ? `Student Dashboard${displayName ? ` · ${displayName}` : ""}` : role === "Parent" ? "Parent Guardian Portal" : "Administrative Console")}
                 {activeSection === "inquiries" && "Prospective Inquiries & Lead Triage Queue"}
                 {activeSection === "students" && (role === "Student" || role === "Parent" ? "Assigned Counsellor & Advisor" : "Student Directory & Intake Roster")}
@@ -510,18 +498,22 @@ export default function PortalPage() {
                 {activeSection === "feedback" && "Feedback to Counsellor"}
                 {activeSection === "parent-form" && "Parent Information Form"}
                 {activeSection === "documents" && "Academic Marksheets"}
+                {activeSection === "pricing" && "Module & AI CMT Pricing"}
                 {activeSection === "settings" && "Institute Profile & System Configuration"}
               </h1>
             </div>
-
-          </div>}
+            <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-[#dde2eb] bg-white px-3 py-2 text-[11px] text-[#697181] shadow-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e] shadow-[0_0_8px_#22c55e]" />
+              Live workspace
+            </div>
+          </div>
 
           {/* Section Routing */}
           {activeSection === "overview" && (
             <>
-              {role === "SuperAdmin" && <SuperAdminView />}
+              {role === "SuperAdmin" && <SuperAdminView onOpenProfile={() => setProfileModalOpen(true)} />}
               {role === "Brain Admin" && (
-                <BrainAdminDashboard onNavigateFollowups={() => setActiveSection("followups")} />
+                <BrainAdminDashboard onNavigateFollowups={() => setActiveSection("followups")} onNavigateSlots={() => setActiveSection("sessions")} />
               )}
               {role === "Counsellor" && <CounsellorView onNavigateStudents={() => setActiveSection("students")} onNavigateMeetings={() => { setCounsellorReviewTab("followups"); setActiveSection("assessments"); }} />}
               {role === "Student" && <StudentToday studentId={user?.studentId} workspace={studentWorkspace} />}
@@ -583,6 +575,8 @@ export default function PortalPage() {
 
           {activeSection === "documents" && <StudentMarksheets studentId={user?.studentId} workspace={studentWorkspace} />}
 
+          {activeSection === "pricing" && role === "Brain Admin" && <BrainAdminPricingView />}
+
           {activeSection === "settings" && (
             <SettingsSectionView role={role} />
           )}
@@ -602,7 +596,7 @@ export default function PortalPage() {
 // 1. OVERVIEW SUB-VIEWS
 // ==========================================
 
-function SuperAdminView() {
+function SuperAdminView({ onOpenProfile }: { onOpenProfile?: () => void } = {}) {
   const [counsellors, setCounsellors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -621,6 +615,7 @@ function SuperAdminView() {
   });
 
   const [studentCount, setStudentCount] = useState<number | null>(null);
+  const [studentCountError, setStudentCountError] = useState(false);
 
   const loadCounsellors = () => {
     setLoading(true);
@@ -637,9 +632,13 @@ function SuperAdminView() {
       .then((res) => {
         if (res && typeof res.registeredStudents === "number") {
           setStudentCount(res.registeredStudents);
+          setStudentCountError(false);
         }
       })
-      .catch(() => setStudentCount(0));
+      .catch(() => {
+        setStudentCount(null);
+        setStudentCountError(true);
+      });
   };
 
   useEffect(() => {
@@ -699,23 +698,30 @@ function SuperAdminView() {
   };
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="space-y-6">
       {/* Overview Stat Cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={UsersRound}
           label="Active / Registered Students"
-          value={studentCount === null ? "…" : String(studentCount)}
-          hint={studentCount === 0 ? "0 in database" : `${studentCount} active enrolled candidate${studentCount === 1 ? "" : "s"}`}
+          value={studentCountError ? "—" : studentCount === null ? "…" : String(studentCount)}
+          hint={studentCountError ? "Could not load student count" : studentCount === 0 ? "No registered students" : `${studentCount} active enrolled candidate${studentCount === 1 ? "" : "s"}`}
           highlight
         />
-        <StatCard icon={ShieldCheck} label="Super Admin" value="Arpita Kulkarni" hint="arpskulkarni99@gmail.com" />
+        <div
+          onClick={onOpenProfile}
+          className="cursor-pointer transition-transform hover:-translate-y-0.5"
+          title="Click to view Super Administrator profile"
+        >
+          <StatCard icon={ShieldCheck} label="Super Admin" value="Arpita Kulkarni" hint="arpskulkarni99@gmail.com" />
+        </div>
         <StatCard
           icon={UserRound}
           label="Active Counsellors"
           value={loading ? "…" : String(counsellors.length)}
           hint={counsellors.length === 0 ? "0 in database · Add below" : `${counsellors.length} active counsellor${counsellors.length === 1 ? "" : "s"}`}
         />
+        <StatCard icon={Activity} label="Platform Status" value="Online" hint="Operational services available" />
       </div>
 
       <BrainAdminCreationPanel />
@@ -982,8 +988,10 @@ function SuperAdminView() {
 
 function BrainAdminDashboard({
   onNavigateFollowups,
+  onNavigateSlots,
 }: {
   onNavigateFollowups: () => void;
+  onNavigateSlots: () => void;
 }) {
   type DailyAppointment = {
     id: string;
@@ -1051,7 +1059,7 @@ function BrainAdminDashboard({
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <button type="button" onClick={() => setAppointmentsOpen(true)} aria-label="View daily appointments booked" className="rounded-[12px] text-left transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3f2f7a]"><StatCard icon={Video} label="Appointments Booked" value={dailyData ? String(appointments.length) : dailyError ? "—" : "…"} hint={dailyData ? `Today · ${onlineCount} online, ${appointments.length - onlineCount} offline · View list` : dailyError || "Loading today’s appointments…"} highlight /></button>
         <button type="button" onClick={() => setStudentsOpen(true)} aria-label="View registered students" className="rounded-[12px] text-left transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3f2f7a]"><StatCard icon={UsersRound} label="Students Registered" value={overview ? String(overview.registeredStudents) : overviewError ? "—" : "…"} hint="View registered students" /></button>
-        <StatCard icon={CalendarDays} label="Available Slots" value={overview ? String(overview.availableSlots) : overviewError ? "—" : "…"} hint="Open in the next 7 days" />
+        <button type="button" onClick={onNavigateSlots} aria-label="View available counselling slots" className="rounded-[12px] text-left transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3f2f7a]"><StatCard icon={CalendarDays} label="Available Slots" value={overview ? String(overview.availableSlots) : overviewError ? "—" : "…"} hint="Open in the next 7 days · View slots" /></button>
         <button type="button" onClick={onNavigateFollowups} aria-label="View follow-up reminders" className="rounded-[12px] text-left transition-transform hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#3f2f7a]"><StatCard icon={Bell} label="Upcoming Follow-ups" value={overview ? String(overview.upcomingFollowups) : overviewError ? "—" : "…"} hint="View reminders" /></button>
       </div>
       {overviewError && <p role="alert" className="text-sm text-red-700">{overviewError}</p>}
@@ -1063,6 +1071,7 @@ function BrainAdminDashboard({
               <p className="text-[#737373]">{module.name}</p>
               <p className="mt-1 text-xl font-semibold text-[#171717]">{module.count}</p>
               <p className="text-[10px] text-[#737373]">students</p>
+              <div className="mt-3 h-1 overflow-hidden rounded-full bg-[#e8ebf0]"><div className="h-full rounded-full bg-[#3b82f6]" style={{ width: `${Math.max(8, Math.min(100, module.count * 12))}%` }} /></div>
             </div>
           ))}
           {!overview && !overviewError && <p className="text-xs text-[#737373]">Loading module registrations…</p>}
@@ -1227,7 +1236,7 @@ function CounsellorView({ onNavigateStudents, onNavigateMeetings }: { onNavigate
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <button type="button" onClick={onNavigateStudents} className="text-left">
           <StatCard
             icon={UsersRound}
@@ -1245,6 +1254,12 @@ function CounsellorView({ onNavigateStudents, onNavigateMeetings }: { onNavigate
             hint={dashboardStats.meetingsToday ? `${dashboardStats.meetingsToday} scheduled session${dashboardStats.meetingsToday === 1 ? "" : "s"} today` : "No sessions scheduled for today"}
           />
         </button>
+        <StatCard
+          icon={FileText}
+          label="Pending Reports"
+          value={loading ? "…" : String(dashboardStats.pendingReports)}
+          hint={dashboardStats.pendingReports ? "Assessments awaiting review" : "All student reviews are current"}
+        />
       </div>
 
       <div>
@@ -1790,11 +1805,51 @@ function StudentsSectionView({ role }: { role: Role }) {
 
 function FollowupsSectionView({ role }: { role: Role }) {
   const isCounsellor = role === "Counsellor";
-  const [followups, setFollowups] = useState<typeof initialFollowups>(isCounsellor ? [] : initialFollowups);
+  const [followups, setFollowups] = useState<typeof initialFollowups>([]);
+  const [followupStats, setFollowupStats] = useState<{ totalDueToday: number; weeklyFollowUps: number } | null>(null);
+  const [followupsLoading, setFollowupsLoading] = useState(true);
+  const [followupsError, setFollowupsError] = useState("");
   const [listView, setListView] = useState<"Today" | "Next Week" | "Next Month">("Today");
   const [reminderPopup, setReminderPopup] = useState<"Next Week" | "Next Month" | null>(null);
   const [newNote, setNewNote] = useState("");
-  const [activeModalId, setActiveModalId] = useState<number | null>(null);
+  const [activeModalId, setActiveModalId] = useState<string | null>(null);
+
+  const loadFollowups = async () => {
+    setFollowupsLoading(true);
+    setFollowupsError("");
+    try {
+      const result = await api.followups.list();
+      const now = new Date();
+      const dateKeyFor = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const todayKey = dateKeyFor(now);
+      const tomorrow = new Date(now);
+      tomorrow.setDate(now.getDate() + 1);
+      const tomorrowKey = dateKeyFor(tomorrow);
+      setFollowups(result.followups.map((item) => {
+        const dateKey = String(item.nextFollowupDate || item.followupDate).slice(0, 10);
+        const dueDate = dateKey === todayKey ? "Today" : dateKey === tomorrowKey ? "Tomorrow" : new Date(`${dateKey}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+        return {
+          id: item.id,
+          studentId: item.inquiryNumber,
+          studentName: item.studentName,
+          program: item.programName || "Counselling",
+          counsellor: item.conductedBy,
+          type: item.sourceType === "appointment" ? "Counselling session reminder" : "Follow-up reminder",
+          dueDate,
+          status: item.statusCode === "completed" ? "Completed" : item.isOverdue ? "Overdue" : dateKey === todayKey ? "Due" : "Upcoming",
+          note: item.remark || "Scheduled follow-up",
+          actionable: item.sourceType !== "appointment",
+        };
+      }));
+      setFollowupStats(result.stats);
+    } catch (error) {
+      setFollowupsError(error instanceof Error ? error.message : "Follow-up reminders could not be loaded.");
+    } finally {
+      setFollowupsLoading(false);
+    }
+  };
+
+  useEffect(() => { void loadFollowups(); }, []);
 
   const filtered = useMemo(() => {
     const byPeriod = followups.filter((item) => {
@@ -1805,8 +1860,8 @@ function FollowupsSectionView({ role }: { role: Role }) {
     return byPeriod;
   }, [followups, listView]);
 
-  const todayCount = followups.filter((item) => item.status === "Due" || item.status === "Overdue" || item.dueDate === "Tomorrow").length;
-  const weeklyCount = followups.filter((item) => item.status !== "Completed").length;
+  const todayCount = followupStats?.totalDueToday ?? followups.filter((item) => item.status === "Due" || item.status === "Overdue").length;
+  const weeklyCount = followupStats?.weeklyFollowUps ?? followups.filter((item) => item.status !== "Completed").length;
 
   useEffect(() => {
     const today = new Date();
@@ -1815,8 +1870,14 @@ function FollowupsSectionView({ role }: { role: Role }) {
     else if (today.getDay() === 6) setReminderPopup("Next Week");
   }, []);
 
-  const markComplete = (id: number) => {
-    setFollowups(followups.map((f) => (f.id === id ? { ...f, status: "Completed" } : f)));
+  const markComplete = async (id: string) => {
+    setFollowupsError("");
+    try {
+      await api.followups.complete(id);
+      await loadFollowups();
+    } catch (error) {
+      setFollowupsError(error instanceof Error ? error.message : "The follow-up could not be completed.");
+    }
   };
 
   return (
@@ -1864,18 +1925,18 @@ function FollowupsSectionView({ role }: { role: Role }) {
               </div>
 
               <div className="flex items-center gap-2">
-                {item.status !== "Completed" && (
-                  <Button size="sm" variant="outline" onClick={() => markComplete(item.id)} icon={<Check className="w-3.5 h-3.5 text-[#16a34a]" />}>
+                {item.actionable && item.status !== "Completed" && (
+                  <Button size="sm" variant="outline" onClick={() => void markComplete(item.id)} icon={<Check className="w-3.5 h-3.5 text-[#16a34a]" />}>
                     Mark Done
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={() => setActiveModalId(item.id)}>
-                  Log Call
-                </Button>
+                {item.actionable && <Button size="sm" variant="ghost" onClick={() => setActiveModalId(item.id)}>Log Call</Button>}
               </div>
             </div>
           ))}
-          {filtered.length === 0 && (
+          {followupsLoading && <p className="py-8 text-center text-xs text-[#737373]">Loading follow-up reminders…</p>}
+          {followupsError && <p role="alert" className="py-4 text-center text-xs text-red-600">{followupsError}</p>}
+          {!followupsLoading && !followupsError && filtered.length === 0 && (
             <p className="py-8 text-center text-xs text-[#737373]">
               {isCounsellor ? "No follow-up action items scheduled for your caseload." : "No follow-up actions in this list."}
             </p>
@@ -1915,12 +1976,17 @@ function FollowupsSectionView({ role }: { role: Role }) {
               <Button
                 size="sm"
                 variant="primary"
+                disabled={!newNote.trim()}
                 onClick={() => {
-                  if (newNote.trim()) {
-                    setFollowups(followups.map((f) => f.id === activeModalId ? { ...f, note: newNote } : f));
-                  }
-                  setActiveModalId(null);
-                  setNewNote("");
+                  const note = newNote.trim();
+                  if (!note) return;
+                  void api.followups.logCall(activeModalId, { callOutcome: "Follow-up completed", notes: note, statusCode: "completed" })
+                    .then(async () => {
+                      setActiveModalId(null);
+                      setNewNote("");
+                      await loadFollowups();
+                    })
+                    .catch((error) => setFollowupsError(error instanceof Error ? error.message : "The call record could not be saved."));
                 }}
               >
                 Save Record
@@ -1939,9 +2005,17 @@ function FollowupsSectionView({ role }: { role: Role }) {
 
 function BrainAdminSlotCalendar() {
   const modules = ["Ankur", "Palavi", "Lakshya", "Udaan", "Phoenix", "CMT"] as const;
-  const availableDays = new Set([24, 25, 26, 28, 29, 30]);
-  const slots = ["09:30 AM", "11:00 AM", "12:30 PM", "02:00 PM", "03:30 PM", "05:00 PM"];
-  const [selectedDay, setSelectedDay] = useState<number | null>(24);
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const monthLabel = today.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  const availableDays = new Set(Array.from({ length: 7 }, (_, offset) => {
+    const date = new Date(year, month, today.getDate() + offset);
+    return date.getMonth() === month && date.getDay() !== 0 ? date.getDate() : null;
+  }).filter((day): day is number => day !== null));
+  const firstAvailableDay = [...availableDays][0] || null;
+  const [selectedDay, setSelectedDay] = useState<number | null>(firstAvailableDay);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [studentName, setStudentName] = useState("");
   const [mode, setMode] = useState<"online" | "in_person">("online");
@@ -1952,12 +2026,12 @@ function BrainAdminSlotCalendar() {
   const [counsellors, setCounsellors] = useState<Array<{ id: string; fullName: string; title: string }>>([]);
   const [booking, setBooking] = useState(false);
   const [bookingError, setBookingError] = useState("");
-  const [bookings, setBookings] = useState<Record<string, string>>({
-    "24-11:00 AM": "Siya Patil",
-    "25-02:00 PM": "Vihaan Joshi",
-  });
+  const [availableSlotOptions, setAvailableSlotOptions] = useState<Array<{ startTime: string; timeRangeDisplay: string; isBooked: boolean }>>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [bookings, setBookings] = useState<Record<string, string>>({});
   const [confirmation, setConfirmation] = useState("");
-  const leadingBlankDays = 2;
+  const leadingBlankDays = new Date(year, month, 1).getDay();
+  const appointmentDate = selectedDay ? `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}` : "";
   const bookingKey = selectedDay && selectedTime ? `${selectedDay}-${selectedTime}` : "";
 
   useEffect(() => {
@@ -1972,6 +2046,33 @@ function BrainAdminSlotCalendar() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    if (!selectedDay || !counsellorId) {
+      setAvailableSlotOptions([]);
+      return;
+    }
+    let active = true;
+    setSlotsLoading(true);
+    setBookingError("");
+    apiCall<{ slots: Array<{ startTime: string; timeRangeDisplay: string; isBooked: boolean }> }>(`/api/v1/appointments/${counsellorId}/availability`, { query: { date: appointmentDate } })
+      .then((result) => {
+        if (!active) return;
+        setAvailableSlotOptions(result.slots);
+        setBookings((current) => {
+          const next = { ...current };
+          result.slots.forEach((slot) => {
+            const key = `${selectedDay}-${slot.startTime}`;
+            if (slot.isBooked) next[key] = "Booked";
+            else delete next[key];
+          });
+          return next;
+        });
+      })
+      .catch((error) => { if (active) setBookingError(error instanceof Error ? error.message : "Available times could not be loaded."); })
+      .finally(() => { if (active) setSlotsLoading(false); });
+    return () => { active = false; };
+  }, [appointmentDate, counsellorId, selectedDay]);
+
   const bookSlot = async () => {
     if (!selectedDay || !selectedTime || !studentName.trim() || !email.trim() || !phone.trim() || !counsellorId || bookings[bookingKey]) return;
     setBooking(true);
@@ -1979,10 +2080,10 @@ function BrainAdminSlotCalendar() {
     try {
       const result = await apiCall<{ registrationFormNo: string }>("/api/v1/appointments/quick-book", {
         method: "POST",
-        body: { studentName: studentName.trim(), email: email.trim(), phone: phone.trim(), mode, module, counsellorId, appointmentDate: `2026-09-${String(selectedDay).padStart(2, "0")}`, timeDisplay: selectedTime },
+        body: { studentName: studentName.trim(), email: email.trim(), phone: phone.trim(), mode, module, counsellorId, appointmentDate, timeDisplay: selectedTime },
       });
       setBookings((current) => ({ ...current, [bookingKey]: studentName.trim() }));
-      setConfirmation(`${studentName.trim()} booked for ${selectedDay} September 2026 at ${selectedTime}. Temporary registration ${result.registrationFormNo} created.`);
+      setConfirmation(`${studentName.trim()} booked for ${selectedDay} ${monthLabel} at ${selectedTime}. Temporary registration ${result.registrationFormNo} created.`);
       setStudentName("");
       setEmail("");
       setPhone("");
@@ -1999,11 +2100,11 @@ function BrainAdminSlotCalendar() {
       {confirmation && <div className="flex items-center gap-2 rounded-[8px] border border-[#bbf7d0] bg-[#dcfce7] p-3 text-xs text-[#16a34a]"><CheckCircle2 className="h-4 w-4" />{confirmation}</div>}
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <SectionPanel title="Open Slot Calendar" subtitle="Select an available date to see its counselling times">
-          <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold">September 2026</h3><span className="text-[10px] text-[#737373]">Pune Main Campus</span></div>
+          <div className="mb-4 flex items-center justify-between"><h3 className="text-sm font-semibold">{monthLabel}</h3><span className="text-[10px] text-[#737373]">Next 7 days · Pune Main Campus</span></div>
           <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-[#737373]">{["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(day => <div key={day} className="py-2">{day}</div>)}</div>
           <div className="grid grid-cols-7 gap-1">
             {Array.from({ length: leadingBlankDays }).map((_, index) => <div key={`blank-${index}`} />)}
-            {Array.from({ length: 30 }, (_, index) => index + 1).map(day => {
+            {Array.from({ length: daysInMonth }, (_, index) => index + 1).map(day => {
               const available = availableDays.has(day);
               return <button key={day} disabled={!available} onClick={() => { setSelectedDay(day); setSelectedTime(null); setConfirmation(""); }} className={`relative h-11 rounded-[6px] border text-xs ${selectedDay === day ? "border-black bg-[#2c2159] text-white" : available ? "border-[#bbf7d0] bg-[#f0fdf4] text-[#171717] hover:border-[#16a34a]" : "cursor-not-allowed border-transparent text-[#c9c2e3]"}`}>
                 {day}{available && <span className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${selectedDay === day ? "bg-white" : "bg-[#16a34a]"}`} />}
@@ -2013,12 +2114,13 @@ function BrainAdminSlotCalendar() {
           <div className="mt-4 flex gap-4 text-[10px] text-[#737373]"><span className="flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#16a34a]" />Available</span><span className="flex items-center gap-1"><i className="h-2 w-2 rounded-full bg-[#c9c2e3]" />Unavailable</span></div>
         </SectionPanel>
 
-        <SectionPanel title={selectedDay ? `${selectedDay} September · Available Times` : "Select a Date"} subtitle="Choose a time, then enter the student name">
+        <SectionPanel title={selectedDay ? `${selectedDay} ${monthLabel} · Available Times` : "Select a Date"} subtitle="Choose a time, then enter the student name">
           {selectedDay ? <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-2">{slots.map(time => {
+            {slotsLoading ? <p className="py-4 text-center text-xs text-[#737373]">Loading available times…</p> : <div className="grid grid-cols-2 gap-2">{availableSlotOptions.map(({ startTime: time, timeRangeDisplay }) => {
               const bookedBy = bookings[`${selectedDay}-${time}`];
-              return <button key={time} disabled={Boolean(bookedBy)} onClick={() => setSelectedTime(time)} className={`rounded-[8px] border p-2.5 text-left text-xs ${bookedBy ? "cursor-not-allowed border-[#d8d5e6] bg-[#f6f3fb] text-[#a3a3a3]" : selectedTime === time ? "border-black bg-[#2c2159] text-white" : "border-[#d8d5e6] hover:border-black"}`}><span className="block font-medium">{time}</span><span className="mt-0.5 block text-[9px]">{bookedBy ? `Booked · ${bookedBy}` : "Open slot"}</span></button>;
-            })}</div>
+              return <button key={timeRangeDisplay} disabled={Boolean(bookedBy)} onClick={() => setSelectedTime(time)} className={`rounded-[8px] border p-2.5 text-left text-xs ${bookedBy ? "cursor-not-allowed border-[#d8d5e6] bg-[#f6f3fb] text-[#a3a3a3]" : selectedTime === time ? "border-black bg-[#2c2159] text-white" : "border-[#d8d5e6] hover:border-black"}`}><span className="block font-medium">{timeRangeDisplay}</span><span className="mt-0.5 block text-[9px]">{bookedBy ? "Booked" : "Open slot"}</span></button>;
+            })}</div>}
+            {!slotsLoading && availableSlotOptions.length === 0 && !bookingError && <p className="py-4 text-center text-xs text-[#737373]">No times are configured for this date.</p>}
             <div className="space-y-3 border-t border-[#d8d5e6] pt-4">
               <div><label className="mb-1 block text-[11px] font-medium text-[#525252]">Student name</label><input required value={studentName} onChange={(event) => setStudentName(event.target.value)} placeholder="Enter full name" className="h-9 w-full rounded-[6px] border border-[#d8d5e6] px-3 text-xs focus:border-[#3f2f7a] focus:outline-none" /></div>
               <div className="grid grid-cols-2 gap-3">
@@ -2118,7 +2220,6 @@ function CounsellorSessionsView() {
                   <p className="text-[10px] text-[#737373]">{session.programName || "Counselling"}{session.location ? ` · ${session.location}` : ""}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {session.mode === "in_person" && <Button size="sm" variant="outline" icon={<MapPin className="h-3.5 w-3.5" />}>View Room Details</Button>}
                   {session.status === "in_progress" ? (
                     <Button size="sm" variant="primary" disabled={updatingSessionId === session.appointmentId} onClick={() => void endSession(session)}>
                       {updatingSessionId === session.appointmentId ? "Ending…" : "End Session"}
@@ -3497,6 +3598,110 @@ function AuditLogView() {
           </div>
         )}
       </SectionPanel>
+    </div>
+  );
+}
+
+type PricingItem = {
+  id: string;
+  code: string;
+  name: string;
+  kind: "module" | "ai_cmt";
+  price: number;
+  gstRatePercent: number;
+  serviceFeeRatePercent: number;
+  totalWithGst: number;
+};
+
+function BrainAdminPricingView() {
+  const [items, setItems] = useState<PricingItem[]>([]);
+  const [draftPrices, setDraftPrices] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
+
+  const loadPricing = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await apiCall<PricingItem[]>("/api/v1/admin/pricing");
+      setItems(result);
+      setDraftPrices(Object.fromEntries(result.map((item) => [item.id, String(item.price)])));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Pricing could not be loaded.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void loadPricing(); }, []);
+
+  const savePricing = async () => {
+    const updates = items.map((item) => ({ id: item.id, price: Number(draftPrices[item.id]) }));
+    if (updates.some((item) => !Number.isFinite(item.price) || item.price < 0 || item.price > 1000000)) {
+      setError("Enter a valid price between ₹0 and ₹10,00,000 for every item.");
+      return;
+    }
+    setSaving(true);
+    setSaved(false);
+    setError("");
+    try {
+      const result = await apiCall<PricingItem[]>("/api/v1/admin/pricing", { method: "PATCH", body: { items: updates } });
+      setItems(result);
+      setDraftPrices(Object.fromEntries(result.map((item) => [item.id, String(item.price)])));
+      setSaved(true);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Pricing could not be saved.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderPricingCard = (item: PricingItem) => {
+    const basePrice = Number(draftPrices[item.id] || 0);
+    const finalPrice = Math.round(basePrice * (1 + item.gstRatePercent / 100));
+    return (
+      <div key={item.id} className={`rounded-xl border bg-white p-4 ${item.kind === "ai_cmt" ? "border-[#a99bd2] shadow-sm" : "border-[#dde2eb]"}`}>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-[#171717]">{item.name}</p>
+            <p className="mt-0.5 text-[10px] uppercase tracking-wider text-[#737373]">{item.kind === "ai_cmt" ? "AI CMT assessment" : `Module · ${item.code}`}</p>
+          </div>
+          <div className={`rounded-lg p-2 ${item.kind === "ai_cmt" ? "bg-[#efeaf9] text-[#3f2f7a]" : "bg-[#eef4ff] text-[#2563eb]"}`}>
+            {item.kind === "ai_cmt" ? <Brain className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
+          </div>
+        </div>
+        <label className="mt-4 block text-[11px] font-medium text-[#525252]">Base price before GST</label>
+        <div className="relative mt-1">
+          <IndianRupee className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#737373]" />
+          <input type="number" min="0" max="1000000" step="1" value={draftPrices[item.id] ?? ""} onChange={(event) => setDraftPrices((current) => ({ ...current, [item.id]: event.target.value }))} className="h-10 w-full rounded-lg border border-[#d8d5e6] pl-8 pr-3 text-sm font-semibold focus:border-[#3f2f7a] focus:outline-none" />
+        </div>
+        <div className="mt-3 flex items-center justify-between border-t border-[#edf0f4] pt-3 text-[11px]">
+          <span className="text-[#737373]">GST {item.gstRatePercent}%</span>
+          <span className="font-semibold text-[#171717]">Student pays ₹{finalPrice.toLocaleString("en-IN")}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const modules = items.filter((item) => item.kind === "module");
+  const aiCmt = items.filter((item) => item.kind === "ai_cmt");
+
+  return (
+    <div className="max-w-5xl space-y-6">
+      {saved && <div className="flex items-center gap-2 rounded-lg border border-[#bbf7d0] bg-[#dcfce7] p-3 text-xs text-[#15803d]"><CheckCircle2 className="h-4 w-4" />Pricing updated. New checkout orders will use these amounts.</div>}
+      {error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700"><AlertCircle className="h-4 w-4" />{error}</div>}
+      {loading ? <div className="py-12 text-center text-sm text-[#737373]">Loading pricing…</div> : <>
+        <SectionPanel title="Counselling Module Prices" subtitle="Base fees used for new registrations and Razorpay orders">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{modules.map(renderPricingCard)}</div>
+        </SectionPanel>
+        <SectionPanel title="AI CMT Price" subtitle="Separate assessment fee used in the student AI CMT checkout">
+          <div className="max-w-md">{aiCmt.map(renderPricingCard)}</div>
+          {aiCmt.length === 0 && <p className="text-xs text-[#737373]">AI CMT pricing is not configured yet.</p>}
+        </SectionPanel>
+        <div className="flex justify-end"><Button variant="primary" disabled={saving || items.length === 0} onClick={() => void savePricing()} icon={<Check className="h-4 w-4" />}>{saving ? "Saving…" : "Save Pricing"}</Button></div>
+      </>}
     </div>
   );
 }
